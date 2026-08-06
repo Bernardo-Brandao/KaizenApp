@@ -6,6 +6,11 @@
 	objectVersion = 110;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		0C596A99302425960093D362 /* SQLite in Frameworks */ = {isa = PBXBuildFile; productRef = 0C596A98302425960093D362 /* SQLite */; };
+		0C596A9B302425960093D362 /* SQLite-Dynamic in Frameworks */ = {isa = PBXBuildFile; productRef = 0C596A9A302425960093D362 /* SQLite-Dynamic */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		0C596A89302425700093D362 /* KaizenApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KaizenApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -22,6 +27,8 @@
 		0C596A86302425700093D362 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
+				0C596A9B302425960093D362 /* SQLite-Dynamic in Frameworks */,
+				0C596A99302425960093D362 /* SQLite in Frameworks */,
 			);
 		};
 /* End PBXFrameworksBuildPhase section */
@@ -60,6 +67,10 @@
 				0C596A8B302425700093D362 /* KaizenApp */,
 			);
 			name = KaizenApp;
+			packageProductDependencies = (
+				0C596A98302425960093D362 /* SQLite */,
+				0C596A9A302425960093D362 /* SQLite-Dynamic */,
+			);
 			productName = KaizenApp;
 			productReference = 0C596A89302425700093D362 /* KaizenApp.app */;
 			productType = "com.apple.product-type.application";
@@ -88,6 +99,9 @@
 			);
 			mainGroup = 0C596A803024256F0093D362;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				0C596A97302425960093D362 /* XCRemoteSwiftPackageReference "SQLite.swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 0C596A8A302425700093D362 /* Products */;
 			projectDirPath = "";
@@ -320,6 +334,30 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		0C596A97302425960093D362 /* XCRemoteSwiftPackageReference "SQLite.swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/stephencelis/SQLite.swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.16.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		0C596A98302425960093D362 /* SQLite */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0C596A97302425960093D362 /* XCRemoteSwiftPackageReference "SQLite.swift" */;
+			productName = SQLite;
+		};
+		0C596A9A302425960093D362 /* SQLite-Dynamic */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0C596A97302425960093D362 /* XCRemoteSwiftPackageReference "SQLite.swift" */;
+			productName = "SQLite-Dynamic";
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 0C596A813024256F0093D362 /* Project object */;
 	validationLevel = 1;
