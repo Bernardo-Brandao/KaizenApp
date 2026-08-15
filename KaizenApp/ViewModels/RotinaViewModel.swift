@@ -1,10 +1,3 @@
-//
-//  RotinaViewModel.swift
-//  KaizenApp
-//
-//  Created by Bernardo Brandão on 05/08/26.
-//
-
 import Foundation
 import Combine
 
@@ -19,6 +12,11 @@ class RotinaViewModel: ObservableObject {
     func adicionar(nome: String, descricao: String, frequencia: String) {
         let nova = Rotina(id: nil, nome: nome, descricao: descricao, frequencia: frequencia, ativa: true)
         dao.inserir(nova)
+        carregar()
+    }
+
+    func atualizar(_ rotina: Rotina) {
+        dao.atualizar(rotina)
         carregar()
     }
 
