@@ -56,6 +56,22 @@ class TarefaDAO {
         ))
     }
 
+    // Só troca o nome — não mexe na conclusão da tarefa
+    func renomear(_ tarefa: Tarefa, para novoNome: String) {
+        guard let tarefaId = tarefa.id else { return }
+        try? db?.run(table.filter(id == tarefaId).update(nome <- novoNome))
+    }
+
+    // Grava a ordem das tarefas conforme a posição de cada uma na lista
+    func salvarOrdem(_ tarefas: [Tarefa]) {
+        try? db?.transaction {
+            for (posicao, tarefa) in tarefas.enumerated() {
+                guard let tarefaId = tarefa.id else { continue }
+                try db?.run(table.filter(id == tarefaId).update(ordem <- posicao))
+            }
+        }
+    }
+
     func excluir(_ tarefa: Tarefa) {
         guard let tarefaId = tarefa.id else { return }
         let registro = table.filter(id == tarefaId)

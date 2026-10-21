@@ -6,6 +6,9 @@ struct DetalheRotinaView: View {
     @StateObject private var viewModel: TarefaViewModel
     @State private var novaTarefaNome = ""
     @State private var mostrarCampoNovaTarefa = false
+    @State private var tarefaParaRenomear: Tarefa?
+    @State private var nomeEditado = ""
+    @State private var mostrarOrganizar = false
     @Environment(\.scenePhase) private var scenePhase
 
     init(rotina: Rotina) {
@@ -49,12 +52,29 @@ struct DetalheRotinaView: View {
                 .padding(.top, 8)
 
                 // Grid de tarefas
+                if viewModel.tarefas.count > 1 {
+                    HStack {
+                        Text("Tarefas")
+                            .font(.headline)
+                        Spacer()
+                        Button("Organizar") { mostrarOrganizar = true }
+                            .font(.subheadline)
+                    }
+                    .padding(.horizontal)
+                }
+
                 LazyVGrid(columns: colunas, spacing: 14) {
                     ForEach(viewModel.tarefas) { tarefa in
                         TarefaCard(tarefa: tarefa) {
                             viewModel.alternarConcluida(tarefa)
                         }
                         .contextMenu {
+                            Button {
+                                nomeEditado = tarefa.nome
+                                tarefaParaRenomear = tarefa
+                            } label: {
+                                Label("Renomear", systemImage: "pencil")
+                            }
                             Button(role: .destructive) {
                                 viewModel.excluir(tarefa)
                             } label: {
@@ -107,6 +127,21 @@ struct DetalheRotinaView: View {
                 }
             }
         }
+        .alert("Renomear tarefa", isPresented: Binding(
+            get: { tarefaParaRenomear != nil },
+            set: { if !$0 { tarefaParaRenomear = nil } }
+        )) {
+            TextField("Nome da tarefa", text: $nomeEditado)
+            Button("Salvar") {
+                if let tarefa = tarefaParaRenomear {
+                    viewModel.renomear(tarefa, para: nomeEditado)
+                }
+            }
+            Button("Cancelar", role: .cancel) {}
+        }
+        .sheet(isPresented: $mostrarOrganizar) {
+            OrganizarTarefasView(viewModel: viewModel)
+        }
         .onAppear {
             recarregarRotina()
             viewModel.carregar()
@@ -124,6 +159,36 @@ struct DetalheRotinaView: View {
         }
         viewModel.frequencia = rotina.frequencia
         categoria = CategoriaDAO().listarTodas().first { $0.id == rotina.categoriaId }
+    }
+}
+
+// MARK: - Organizar tarefas (arrastar pra reordenar, deslizar pra excluir)
+struct OrganizarTarefasView: View {
+    @ObservedObject var viewModel: TarefaViewModel
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                ForEach(viewModel.tarefas) { tarefa in
+                    Text(tarefa.nome)
+                }
+                .onMove { origem, destino in
+                    viewModel.mover(de: origem, para: destino)
+                }
+                .onDelete { indices in
+                    indices.map { viewModel.tarefas[$0] }.forEach(viewModel.excluir)
+                }
+            }
+            .environment(\.editMode, .constant(.active))
+            .navigationTitle("Organizar tarefas")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("OK") { dismiss() }
+                }
+            }
+        }
     }
 }
 
