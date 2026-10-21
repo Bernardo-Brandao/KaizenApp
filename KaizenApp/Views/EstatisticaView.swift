@@ -39,14 +39,15 @@ struct EstatisticasView: View {
                         .font(.headline)
                         .padding(.horizontal)
 
-                    if viewModel.ultimos7Dias.isEmpty {
+                    if viewModel.diasRegistrados == 0 {
                         Text("Ainda não há histórico suficiente.")
                             .foregroundColor(.secondary)
                             .font(.subheadline)
                             .padding(.horizontal)
                     } else {
+                        // id pela data: dias sem registro não têm id no banco
                         HStack(alignment: .bottom, spacing: 10) {
-                            ForEach(viewModel.ultimos7Dias) { dia in
+                            ForEach(viewModel.ultimos7Dias, id: \.data) { dia in
                                 barraDia(dia)
                             }
                         }
@@ -90,14 +91,23 @@ struct EstatisticasView: View {
 
     @ViewBuilder
     private func barraDia(_ dia: HistoricoDia) -> some View {
+        let ehHoje = dia.data == DataUtil.hoje()
+
         VStack(spacing: 6) {
             Spacer()
-            RoundedRectangle(cornerRadius: 4)
-                .fill(dia.completoNoDia ? AppTheme.primary : AppTheme.primarySoft)
-                .frame(height: max(8, CGFloat(dia.percentual) * 90))
-            Text(diaAbreviado(dia.data))
-                .font(.caption2)
-                .foregroundColor(.secondary)
+            if dia.id == nil {
+                // Dia sem registro: só o contorno, pra mostrar o buraco na sequência
+                RoundedRectangle(cornerRadius: 4)
+                    .stroke(Color.secondary.opacity(0.35), style: StrokeStyle(lineWidth: 1, dash: [3]))
+                    .frame(height: 8)
+            } else {
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(dia.completoNoDia ? AppTheme.primary : AppTheme.primarySoft)
+                    .frame(height: max(8, CGFloat(dia.percentual) * 90))
+            }
+            Text(ehHoje ? "Hoje" : diaAbreviado(dia.data))
+                .font(.caption2.weight(ehHoje ? .semibold : .regular))
+                .foregroundColor(ehHoje ? .primary : .secondary)
         }
         .frame(maxWidth: .infinity)
     }
