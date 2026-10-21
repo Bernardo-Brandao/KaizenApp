@@ -75,6 +75,7 @@ class TarefaViewModel: ObservableObject {
     // Completar (ou deixar de completar) a rotina muda se o lembrete do período ainda precisa tocar
     private func atualizarLembrete() {
         NotificationManager.shared.atualizarLembrete(rotinaId: rotinaId)
+        WidgetSync.atualizar()
     }
 
     // Sempre que a lista de tarefas muda, atualiza o histórico do período atual
