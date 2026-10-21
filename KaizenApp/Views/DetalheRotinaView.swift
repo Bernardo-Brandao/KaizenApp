@@ -9,6 +9,9 @@ struct DetalheRotinaView: View {
     @State private var tarefaParaRenomear: Tarefa?
     @State private var nomeEditado = ""
     @State private var mostrarOrganizar = false
+    @State private var mostrarComemoracao = false
+    @State private var toquesEmTarefas = 0      // gatilho da vibração leve a cada toque
+    @State private var conclusoes = 0           // gatilho da vibração de sucesso
     @Environment(\.scenePhase) private var scenePhase
 
     init(rotina: Rotina) {
@@ -70,7 +73,10 @@ struct DetalheRotinaView: View {
                 LazyVGrid(columns: colunas, spacing: 14) {
                     ForEach(viewModel.tarefas) { tarefa in
                         TarefaCard(tarefa: tarefa) {
-                            viewModel.alternarConcluida(tarefa)
+                            toquesEmTarefas += 1
+                            if viewModel.alternarConcluida(tarefa) {
+                                comemorar()
+                            }
                         }
                         .contextMenu {
                             Button {
@@ -112,6 +118,14 @@ struct DetalheRotinaView: View {
                 }
             }
         }
+        .overlay {
+            if mostrarComemoracao {
+                ComemoracaoView(frequencia: rotina.frequencia)
+                    .transition(.opacity)
+            }
+        }
+        .sensoryFeedback(.selection, trigger: toquesEmTarefas)
+        .sensoryFeedback(.success, trigger: conclusoes)
         .navigationTitle("Detalhes")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -153,6 +167,16 @@ struct DetalheRotinaView: View {
         // Recarrega ao voltar pro app — se virou o dia, as tarefas aparecem desmarcadas
         .onChange(of: scenePhase) { _, fase in
             if fase == .active { viewModel.carregar() }
+        }
+    }
+
+    // Mostra o selo de rotina completa por ~2s, com vibração de sucesso
+    private func comemorar() {
+        conclusoes += 1
+        withAnimation { mostrarComemoracao = true }
+        Task {
+            try? await Task.sleep(for: .seconds(2))
+            withAnimation { mostrarComemoracao = false }
         }
     }
 
