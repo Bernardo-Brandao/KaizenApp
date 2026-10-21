@@ -67,6 +67,23 @@ class RotinaViewModel: ObservableObject {
         carregar()
     }
 
+    // Pausa ou retoma a rotina: guarda o intervalo da pausa e liga/desliga o lembrete
+    func alternarPausa(_ rotina: Rotina) {
+        guard let id = rotina.id else { return }
+        var atualizada = rotina
+        atualizada.ativa.toggle()
+        dao.atualizar(atualizada)
+
+        if atualizada.ativa {
+            PausaDAO().retomar(rotinaId: id)
+            NotificationManager.shared.agendarLembrete(para: atualizada)
+        } else {
+            PausaDAO().pausar(rotinaId: id)
+            NotificationManager.shared.cancelarLembrete(para: atualizada)
+        }
+        carregar()
+    }
+
     func excluir(_ rotina: Rotina) {
         dao.excluir(rotina)
         NotificationManager.shared.cancelarLembrete(para: rotina)

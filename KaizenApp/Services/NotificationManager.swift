@@ -16,7 +16,8 @@ class NotificationManager {
     }
 
     func agendarLembrete(para rotina: Rotina) {
-        guard rotina.lembreteAtivo, let rotinaId = rotina.id, !rotina.horarioLembrete.isEmpty else {
+        // Rotina pausada não recebe lembrete
+        guard rotina.ativa, rotina.lembreteAtivo, let rotinaId = rotina.id, !rotina.horarioLembrete.isEmpty else {
             return
         }
 
@@ -56,7 +57,7 @@ class NotificationManager {
     // (de antes do lembrete semanal/mensal existir) passem a seguir a frequência
     func reagendarTodos() {
         for rotina in RotinaDAO().listarTodas() {
-            if rotina.lembreteAtivo {
+            if rotina.ativa && rotina.lembreteAtivo {
                 agendarLembrete(para: rotina)
             } else {
                 cancelarLembrete(para: rotina)

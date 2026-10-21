@@ -23,6 +23,7 @@ class DatabaseManager {
         let tarefas = Table("tarefas")
         let categorias = Table("categorias")
         let historico = Table("historico_rotina")
+        let pausas = Table("pausas")
 
         let id = Expression<Int64>("id")
         let nome = Expression<String>("nome")
@@ -80,6 +81,16 @@ class DatabaseManager {
             t.column(tarefasConcluidas)
         })
 
+        let inicio = Expression<String>("inicio")
+        let fim = Expression<String>("fim")
+
+        try? db?.run(pausas.create(ifNotExists: true) { t in
+            t.column(id, primaryKey: .autoincrement)
+            t.column(rotinaId)
+            t.column(inicio)
+            t.column(fim, defaultValue: "")
+        })
+
         // Garante que só existe um registro por rotina/dia — evita duplicar linhas
         try? db?.run(historico.createIndex(rotinaId, data, unique: true, ifNotExists: true))
     }
@@ -95,5 +106,6 @@ class DatabaseManager {
         // Limpa tarefas e histórico de rotinas que já foram excluídas
         try? db?.execute("DELETE FROM tarefas WHERE rotinaId NOT IN (SELECT id FROM rotinas)")
         try? db?.execute("DELETE FROM historico_rotina WHERE rotinaId NOT IN (SELECT id FROM rotinas)")
+        try? db?.execute("DELETE FROM pausas WHERE rotinaId NOT IN (SELECT id FROM rotinas)")
     }
 }

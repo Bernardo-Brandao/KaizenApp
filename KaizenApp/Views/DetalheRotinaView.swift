@@ -51,6 +51,10 @@ struct DetalheRotinaView: View {
                 .padding(.horizontal)
                 .padding(.top, 8)
 
+                if !rotina.ativa {
+                    avisoPausada
+                }
+
                 // Grid de tarefas
                 if viewModel.tarefas.count > 1 {
                     HStack {
@@ -150,6 +154,33 @@ struct DetalheRotinaView: View {
         .onChange(of: scenePhase) { _, fase in
             if fase == .active { viewModel.carregar() }
         }
+    }
+
+    // Aviso de rotina pausada, com botão pra retomar
+    private var avisoPausada: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "pause.circle.fill")
+                .font(.title2)
+                .foregroundColor(.orange)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Rotina pausada")
+                    .font(.subheadline.bold())
+                Text("Sem lembretes, e os períodos pausados não quebram o seu streak.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            Spacer()
+            Button("Retomar") {
+                RotinaViewModel().alternarPausa(rotina)
+                recarregarRotina()
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(AppTheme.primary)
+            .controlSize(.small)
+        }
+        .padding(14)
+        .background(RoundedRectangle(cornerRadius: 14).fill(Color.orange.opacity(0.12)))
+        .padding(.horizontal)
     }
 
     // Busca a versão salva da rotina (pode ter sido editada) e a categoria dela
