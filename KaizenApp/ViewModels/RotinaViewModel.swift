@@ -1,12 +1,39 @@
 import Foundation
 import Combine
 
+// Quantas tarefas da rotina foram concluídas no período atual (dia, semana ou mês)
+struct ProgressoRotina {
+    let concluidas: Int
+    let total: Int
+
+    var percentual: Double {
+        total == 0 ? 0 : Double(concluidas) / Double(total)
+    }
+
+    var completo: Bool {
+        total > 0 && concluidas == total
+    }
+}
+
 class RotinaViewModel: ObservableObject {
     @Published var rotinas: [Rotina] = []
+    @Published var progresso: [Int64: ProgressoRotina] = [:]   // por id da rotina
     private let dao = RotinaDAO()
+    private let tarefaDao = TarefaDAO()
 
     func carregar() {
         rotinas = dao.listarTodas()
+
+        var novoProgresso: [Int64: ProgressoRotina] = [:]
+        for rotina in rotinas {
+            guard let id = rotina.id else { continue }
+            let tarefas = tarefaDao.listarPorRotina(id, frequencia: rotina.frequencia)
+            novoProgresso[id] = ProgressoRotina(
+                concluidas: tarefas.filter { $0.concluidaHoje }.count,
+                total: tarefas.count
+            )
+        }
+        progresso = novoProgresso
     }
 
     func adicionar(nome: String, descricao: String, frequencia: String, horarioLembrete: String, lembreteAtivo: Bool, diaLembrete: Int, categoriaId: Int64?) {

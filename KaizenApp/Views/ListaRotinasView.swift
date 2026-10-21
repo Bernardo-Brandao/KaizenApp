@@ -7,6 +7,7 @@ struct ListaRotinasView: View {
     @State private var filtroCategoriaId: Int64?   // nil = todas as categorias
     @State private var rotinaParaExcluir: Rotina?
     @State private var mostrarConfirmacaoExclusao = false
+    @Environment(\.scenePhase) private var scenePhase
 
     var rotinasFiltradas: [Rotina] {
         viewModel.rotinas.filter { rotina in
@@ -25,13 +26,19 @@ struct ListaRotinasView: View {
             List {
                 ForEach(rotinasFiltradas) { rotina in
                     NavigationLink(destination: DetalheRotinaView(rotina: rotina)) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(rotina.nome).font(.headline)
-                            HStack(spacing: 6) {
-                                Text(rotina.frequencia).font(.subheadline).foregroundColor(.gray)
-                                if let categoria = categoria(de: rotina) {
-                                    CategoriaTag(categoria: categoria)
+                        HStack(spacing: 12) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(rotina.nome).font(.headline)
+                                HStack(spacing: 6) {
+                                    Text(rotina.frequencia).font(.subheadline).foregroundColor(.gray)
+                                    if let categoria = categoria(de: rotina) {
+                                        CategoriaTag(categoria: categoria)
+                                    }
                                 }
+                            }
+                            Spacer()
+                            if let id = rotina.id, let progresso = viewModel.progresso[id], progresso.total > 0 {
+                                ProgressoAnel(progresso: progresso)
                             }
                         }
                     }
@@ -76,6 +83,10 @@ struct ListaRotinasView: View {
                     }
                 }
             }
+            // Recarrega ao voltar pro app — se começou um período novo, o progresso zera
+            .onChange(of: scenePhase) { _, fase in
+                if fase == .active { viewModel.carregar() }
+            }
             .onAppear {
                 viewModel.carregar()
                 categoriaViewModel.carregar()
@@ -98,5 +109,34 @@ struct ListaRotinasView: View {
                 Text("Tem certeza que deseja excluir \"\(rotina.nome)\"? Essa ação não pode ser desfeita.")
             }
         }
+    }
+}
+
+// Anel com o progresso do período atual e o "3/5" ao lado; vira um check quando completo
+struct ProgressoAnel: View {
+    let progresso: ProgressoRotina
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Text("\(progresso.concluidas)/\(progresso.total)")
+                .font(.caption.monospacedDigit())
+                .foregroundColor(.secondary)
+            ZStack {
+                Circle()
+                    .stroke(AppTheme.primarySoft, lineWidth: 4)
+                Circle()
+                    .trim(from: 0, to: progresso.percentual)
+                    .stroke(AppTheme.primary, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                if progresso.completo {
+                    Image(systemName: "checkmark")
+                        .font(.caption2.bold())
+                        .foregroundColor(AppTheme.primary)
+                }
+            }
+            .frame(width: 26, height: 26)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(progresso.concluidas) de \(progresso.total) tarefas concluídas")
     }
 }
