@@ -56,6 +56,45 @@ struct CategoriasView: View {
     }
 }
 
+// Seção de formulário para escolher a categoria de uma rotina (usada em Nova e Editar)
+struct CategoriaPickerSection: View {
+    @Binding var categoriaId: Int64?
+    @StateObject private var viewModel = CategoriaViewModel()
+
+    var body: some View {
+        Section("Categoria") {
+            Picker("Categoria", selection: $categoriaId) {
+                Text("Sem categoria").tag(Int64?.none)
+                ForEach(viewModel.categorias) { categoria in
+                    HStack {
+                        Circle()
+                            .fill(Color(hex: categoria.corHex))
+                            .frame(width: 12, height: 12)
+                        Text(categoria.nome)
+                    }
+                    .tag(categoria.id)
+                }
+            }
+        }
+        .onAppear { viewModel.carregar() }
+    }
+}
+
+// Etiqueta colorida com o nome da categoria
+struct CategoriaTag: View {
+    let categoria: Categoria
+
+    var body: some View {
+        Text(categoria.nome)
+            .font(.caption.weight(.medium))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 2)
+            .background(Color(hex: categoria.corHex).opacity(0.18))
+            .foregroundColor(Color(hex: categoria.corHex))
+            .clipShape(Capsule())
+    }
+}
+
 
 
 

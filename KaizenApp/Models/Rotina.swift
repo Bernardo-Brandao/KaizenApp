@@ -8,4 +8,5 @@ struct Rotina: Identifiable {
     var ativa: Bool
     var horarioLembrete: String   // formato "HH:mm", vazio se não tiver lembrete
     var lembreteAtivo: Bool
+    var categoriaId: Int64? = nil   // nil = sem categoria
 }

@@ -31,5 +31,10 @@ class CategoriaDAO {
         guard let categoriaId = categoria.id else { return }
         let registro = table.filter(id == categoriaId)
         try? db?.run(registro.delete())
+
+        // Rotinas dessa categoria ficam "sem categoria" em vez de apontar pra um id que não existe
+        let rotinas = Table("rotinas")
+        let rotinaCategoriaId = Expression<Int64?>("categoriaId")
+        try? db?.run(rotinas.filter(rotinaCategoriaId == categoriaId).update(rotinaCategoriaId <- nil))
     }
 }
