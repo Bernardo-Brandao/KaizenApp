@@ -9,6 +9,8 @@ struct EditarRotinaView: View {
     @State private var nome: String
     @State private var descricao: String
     @State private var frequencia: String
+    @State private var lembreteAtivo: Bool
+    @State private var horarioLembrete: Date
     @State private var mostrarConfirmacao = false
 
     let opcoesFrequencia = ["Diária", "Semanal", "Mensal"]
@@ -19,6 +21,15 @@ struct EditarRotinaView: View {
         _nome = State(initialValue: rotina.nome)
         _descricao = State(initialValue: rotina.descricao)
         _frequencia = State(initialValue: rotina.frequencia)
+        _lembreteAtivo = State(initialValue: rotina.lembreteAtivo)
+
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        if let data = formatter.date(from: rotina.horarioLembrete) {
+            _horarioLembrete = State(initialValue: data)
+        } else {
+            _horarioLembrete = State(initialValue: Date())
+        }
     }
 
     var body: some View {
@@ -35,6 +46,13 @@ struct EditarRotinaView: View {
                     }
                 }
                 .pickerStyle(.inline)
+            }
+
+            Section("Lembrete") {
+                Toggle("Ativar lembrete diário", isOn: $lembreteAtivo)
+                if lembreteAtivo {
+                    DatePicker("Horário", selection: $horarioLembrete, displayedComponents: .hourAndMinute)
+                }
             }
 
             Section {
@@ -55,6 +73,12 @@ struct EditarRotinaView: View {
         atualizada.nome = nome
         atualizada.descricao = descricao
         atualizada.frequencia = frequencia
+        atualizada.lembreteAtivo = lembreteAtivo
+
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        atualizada.horarioLembrete = lembreteAtivo ? formatter.string(from: horarioLembrete) : ""
+
         viewModel.atualizar(atualizada)
         mostrarConfirmacao = true
     }

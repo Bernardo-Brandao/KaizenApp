@@ -35,7 +35,7 @@ struct DetalheRotinaView: View {
                         .foregroundColor(.secondary)
 
                     ProgressView(value: progresso)
-                        .tint(.primary)
+                        .tint(AppTheme.primary)
                         .padding(.top, 8)
                 }
                 .padding(.horizontal)
@@ -86,6 +86,9 @@ struct DetalheRotinaView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack {
+                    NavigationLink(destination: EstatisticasView(rotina: rotina)) {
+                        Image(systemName: "chart.bar.fill")
+                    }
                     NavigationLink(destination: EditarRotinaView(viewModel: RotinaViewModel(), rotina: rotina)) {
                         Image(systemName: "pencil")
                     }
@@ -112,7 +115,7 @@ struct TarefaCard: View {
                 HStack {
                     Image(systemName: tarefa.concluidaHoje ? "checkmark.circle.fill" : "circle")
                         .font(.title2)
-                        .foregroundColor(tarefa.concluidaHoje ? .green : .secondary)
+                        .foregroundColor(tarefa.concluidaHoje ? AppTheme.primary : .secondary)
                     Spacer()
                 }
                 Text(tarefa.nome)
@@ -125,8 +128,9 @@ struct TarefaCard: View {
             .frame(maxWidth: .infinity, minHeight: 90, alignment: .topLeading)
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(.secondarySystemBackground))
+                    .fill(tarefa.concluidaHoje ? AppTheme.primarySoft : AppTheme.cardBackground)
             )
+            
         }
         .buttonStyle(.plain)
     }

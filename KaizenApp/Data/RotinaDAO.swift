@@ -10,16 +10,21 @@ class RotinaDAO {
     let descricao = Expression<String>("descricao")
     let frequencia = Expression<String>("frequencia")
     let ativa = Expression<Bool>("ativa")
+    let horarioLembrete = Expression<String>("horarioLembrete")
+    let lembreteAtivo = Expression<Bool>("lembreteAtivo")
 
-    // CREATE
-    func inserir(_ rotina: Rotina) {
+    // CREATE — agora retorna o id gerado, pra podermos agendar a notificação certa
+    @discardableResult
+    func inserir(_ rotina: Rotina) -> Int64? {
         let insert = table.insert(
             nome <- rotina.nome,
             descricao <- rotina.descricao,
             frequencia <- rotina.frequencia,
-            ativa <- rotina.ativa
+            ativa <- rotina.ativa,
+            horarioLembrete <- rotina.horarioLembrete,
+            lembreteAtivo <- rotina.lembreteAtivo
         )
-        try? db?.run(insert)
+        return try? db?.run(insert)
     }
 
     // READ
@@ -32,7 +37,9 @@ class RotinaDAO {
                     nome: row[nome],
                     descricao: row[descricao],
                     frequencia: row[frequencia],
-                    ativa: row[ativa]
+                    ativa: row[ativa],
+                    horarioLembrete: row[horarioLembrete],
+                    lembreteAtivo: row[lembreteAtivo]
                 ))
             }
         }
@@ -47,7 +54,9 @@ class RotinaDAO {
             nome <- rotina.nome,
             descricao <- rotina.descricao,
             frequencia <- rotina.frequencia,
-            ativa <- rotina.ativa
+            ativa <- rotina.ativa,
+            horarioLembrete <- rotina.horarioLembrete,
+            lembreteAtivo <- rotina.lembreteAtivo
         ))
     }
 
