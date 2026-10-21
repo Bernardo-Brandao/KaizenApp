@@ -113,7 +113,12 @@ struct EstatisticasView: View {
 
         VStack(spacing: 6) {
             Spacer()
-            if dia.id == nil {
+            if viewModel.periodosPausados.contains(dia.data) && !dia.completoNoDia {
+                // Período pausado: não conta nem quebra o streak
+                Image(systemName: "pause.circle")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            } else if dia.id == nil {
                 // Dia sem registro: só o contorno, pra mostrar o buraco na sequência
                 RoundedRectangle(cornerRadius: 4)
                     .stroke(Color.secondary.opacity(0.35), style: StrokeStyle(lineWidth: 1, dash: [3]))

@@ -3,6 +3,7 @@ import Combine
 
 class EstatisticasViewModel: ObservableObject {
     @Published var historico: [HistoricoDia] = []
+    @Published var periodosPausados: Set<String> = []   // inícios de período em que a rotina esteve pausada
     private let dao = HistoricoDAO()
     private let rotinaId: Int64
     let frequencia: String
@@ -14,6 +15,18 @@ class EstatisticasViewModel: ObservableObject {
 
     func carregar() {
         historico = dao.listarPorRotina(rotinaId)
+
+        // Todo período que teve pelo menos um dia de pausa fica "neutro"
+        var pausados: Set<String> = []
+        for pausa in PausaDAO().listar(rotinaId: rotinaId) {
+            let primeiro = DataUtil.inicioPeriodo(pausa.inicio, frequencia: frequencia)
+            var periodo: String? = DataUtil.inicioPeriodo(pausa.fim, frequencia: frequencia)
+            while let p = periodo, p >= primeiro {   // "yyyy-MM-dd" compara certo como texto
+                pausados.insert(p)
+                periodo = DataUtil.periodoAnterior(a: p, frequencia: frequencia)
+            }
+        }
+        periodosPausados = pausados
     }
 
     // Histórico com um registro por período (dia, semana ou mês), indexado pelo início do período.
@@ -33,22 +46,30 @@ class EstatisticasViewModel: ObservableObject {
     // Sequência atual de períodos seguidos com 100% das tarefas concluídas.
     // O período atual só entra se já estiver completo — enquanto está em andamento, conta a partir do anterior.
     // Um período sem registro (app não aberto) quebra a sequência.
+    // Período pausado é neutro: conta se foi completado, senão é pulado sem quebrar.
     var streakAtual: Int {
         let completos = Set(porPeriodo.filter { $0.value.completoNoDia }.keys)
         let atual = DataUtil.periodoAtual(frequencia: frequencia)
 
         var periodo: String? = completos.contains(atual) ? atual : DataUtil.periodoAnterior(a: atual, frequencia: frequencia)
         var streak = 0
-        while let p = periodo, completos.contains(p) {
-            streak += 1
+        while let p = periodo {
+            if completos.contains(p) {
+                streak += 1
+            } else if !periodosPausados.contains(p) {
+                break
+            }
             periodo = DataUtil.periodoAnterior(a: p, frequencia: frequencia)
         }
         return streak
     }
 
-    // Percentual médio de conclusão entre todos os períodos registrados
+    // Percentual médio de conclusão entre os períodos registrados.
+    // Períodos pausados e não completados ficam de fora, pra pausa não puxar a média pra baixo.
     var percentualMedio: Double {
-        let registros = porPeriodo.values
+        let registros = porPeriodo
+            .filter { periodo, registro in registro.completoNoDia || !periodosPausados.contains(periodo) }
+            .values
         guard !registros.isEmpty else { return 0 }
         let soma = registros.reduce(0.0) { $0 + $1.percentual }
         return soma / Double(registros.count)

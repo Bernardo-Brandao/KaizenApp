@@ -93,5 +93,6 @@ class RotinaDAO {
         let rotinaIdFK = Expression<Int64>("rotinaId")
         try? db?.run(Table("tarefas").filter(rotinaIdFK == rotinaId).delete())
         try? db?.run(Table("historico_rotina").filter(rotinaIdFK == rotinaId).delete())
+        try? db?.run(Table("pausas").filter(rotinaIdFK == rotinaId).delete())
     }
 }

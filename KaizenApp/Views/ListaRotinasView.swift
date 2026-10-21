@@ -21,33 +21,67 @@ struct ListaRotinasView: View {
         categoriaViewModel.categorias.first { $0.id == rotina.categoriaId }
     }
 
+    // Linha de uma rotina: nome, frequência, categoria e progresso (ou "Pausada").
+    // Deslizar pra direita pausa/retoma; pra esquerda exclui.
+    @ViewBuilder
+    private func linha(_ rotina: Rotina) -> some View {
+        NavigationLink(destination: DetalheRotinaView(rotina: rotina)) {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(rotina.nome).font(.headline)
+                    HStack(spacing: 6) {
+                        Text(rotina.frequencia).font(.subheadline).foregroundColor(.gray)
+                        if let categoria = categoria(de: rotina) {
+                            CategoriaTag(categoria: categoria)
+                        }
+                    }
+                }
+                Spacer()
+                if !rotina.ativa {
+                    Label("Pausada", systemImage: "pause.circle")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                } else if let id = rotina.id, let progresso = viewModel.progresso[id], progresso.total > 0 {
+                    ProgressoAnel(progresso: progresso)
+                }
+            }
+            .opacity(rotina.ativa ? 1 : 0.6)
+        }
+        .swipeActions(edge: .leading) {
+            Button {
+                viewModel.alternarPausa(rotina)
+            } label: {
+                if rotina.ativa {
+                    Label("Pausar", systemImage: "pause.fill")
+                } else {
+                    Label("Retomar", systemImage: "play.fill")
+                }
+            }
+            .tint(rotina.ativa ? .orange : AppTheme.primary)
+        }
+        .swipeActions(edge: .trailing) {
+            Button(role: .destructive) {
+                rotinaParaExcluir = rotina
+                mostrarConfirmacaoExclusao = true
+            } label: {
+                Label("Excluir", systemImage: "trash")
+            }
+        }
+    }
+
     var body: some View {
         NavigationStack {
             List {
-                ForEach(rotinasFiltradas) { rotina in
-                    NavigationLink(destination: DetalheRotinaView(rotina: rotina)) {
-                        HStack(spacing: 12) {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(rotina.nome).font(.headline)
-                                HStack(spacing: 6) {
-                                    Text(rotina.frequencia).font(.subheadline).foregroundColor(.gray)
-                                    if let categoria = categoria(de: rotina) {
-                                        CategoriaTag(categoria: categoria)
-                                    }
-                                }
-                            }
-                            Spacer()
-                            if let id = rotina.id, let progresso = viewModel.progresso[id], progresso.total > 0 {
-                                ProgressoAnel(progresso: progresso)
-                            }
-                        }
+                Section {
+                    ForEach(rotinasFiltradas.filter { $0.ativa }) { rotina in
+                        linha(rotina)
                     }
-                    .swipeActions {
-                        Button(role: .destructive) {
-                            rotinaParaExcluir = rotina
-                            mostrarConfirmacaoExclusao = true
-                        } label: {
-                            Label("Excluir", systemImage: "trash")
+                }
+                let pausadas = rotinasFiltradas.filter { !$0.ativa }
+                if !pausadas.isEmpty {
+                    Section("Pausadas") {
+                        ForEach(pausadas) { rotina in
+                            linha(rotina)
                         }
                     }
                 }
