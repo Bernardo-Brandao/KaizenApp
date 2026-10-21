@@ -34,7 +34,14 @@ class NotificationManager {
         dataComponents.hour = hora
         dataComponents.minute = minuto
 
-        // repeats: true faz a notificação repetir todo dia nesse horário
+        // Diária: só hora e minuto. Semanal: também o dia da semana. Mensal: também o dia do mês.
+        switch rotina.frequencia {
+        case "Semanal": dataComponents.weekday = rotina.diaLembrete
+        case "Mensal": dataComponents.day = rotina.diaLembrete
+        default: break
+        }
+
+        // repeats: true faz a notificação repetir a cada dia, semana ou mês nesse horário
         let trigger = UNCalendarNotificationTrigger(dateMatching: dataComponents, repeats: true)
         let identificador = "rotina-\(rotinaId)"
 
@@ -43,6 +50,18 @@ class NotificationManager {
         // Remove qualquer lembrete antigo dessa rotina antes de agendar o novo
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [identificador])
         UNUserNotificationCenter.current().add(request)
+    }
+
+    // Reagenda os lembretes de todas as rotinas — garante que lembretes antigos
+    // (de antes do lembrete semanal/mensal existir) passem a seguir a frequência
+    func reagendarTodos() {
+        for rotina in RotinaDAO().listarTodas() {
+            if rotina.lembreteAtivo {
+                agendarLembrete(para: rotina)
+            } else {
+                cancelarLembrete(para: rotina)
+            }
+        }
     }
 
     func cancelarLembrete(para rotina: Rotina) {

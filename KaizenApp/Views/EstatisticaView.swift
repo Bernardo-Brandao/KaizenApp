@@ -6,7 +6,7 @@ struct EstatisticasView: View {
 
     init(rotina: Rotina) {
         self.rotina = rotina
-        _viewModel = StateObject(wrappedValue: EstatisticasViewModel(rotinaId: rotina.id ?? 0))
+        _viewModel = StateObject(wrappedValue: EstatisticasViewModel(rotinaId: rotina.id ?? 0, frequencia: rotina.frequencia))
     }
 
     var body: some View {
@@ -22,7 +22,7 @@ struct EstatisticasView: View {
                 HStack(spacing: 14) {
                     statCard(
                         valor: "\(viewModel.streakAtual)",
-                        label: viewModel.streakAtual == 1 ? "dia seguido" : "dias seguidos",
+                        label: rotuloStreak,
                         icone: "flame.fill"
                     )
                     statCard(
@@ -33,13 +33,13 @@ struct EstatisticasView: View {
                 }
                 .padding(.horizontal)
 
-                // Últimos 7 dias
+                // Últimos 7 períodos (dias, semanas ou meses)
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Últimos 7 dias")
+                    Text(tituloGrafico)
                         .font(.headline)
                         .padding(.horizontal)
 
-                    if viewModel.diasRegistrados == 0 {
+                    if viewModel.periodosRegistrados == 0 {
                         Text("Ainda não há histórico suficiente.")
                             .foregroundColor(.secondary)
                             .font(.subheadline)
@@ -47,7 +47,7 @@ struct EstatisticasView: View {
                     } else {
                         // id pela data: dias sem registro não têm id no banco
                         HStack(alignment: .bottom, spacing: 10) {
-                            ForEach(viewModel.ultimos7Dias, id: \.data) { dia in
+                            ForEach(viewModel.ultimos7Periodos, id: \.data) { dia in
                                 barraDia(dia)
                             }
                         }
@@ -56,7 +56,7 @@ struct EstatisticasView: View {
                     }
                 }
 
-                if viewModel.diasRegistrados == 0 {
+                if viewModel.periodosRegistrados == 0 {
                     Text("Complete tarefas por alguns dias para começar a ver suas estatísticas aqui.")
                         .foregroundColor(.secondary)
                         .font(.subheadline)
@@ -89,9 +89,27 @@ struct EstatisticasView: View {
         )
     }
 
+    private var rotuloStreak: String {
+        let um = viewModel.streakAtual == 1
+        switch rotina.frequencia {
+        case "Semanal": return um ? "semana seguida" : "semanas seguidas"
+        case "Mensal": return um ? "mês seguido" : "meses seguidos"
+        default: return um ? "dia seguido" : "dias seguidos"
+        }
+    }
+
+    private var tituloGrafico: String {
+        switch rotina.frequencia {
+        case "Semanal": return "Últimas 7 semanas"
+        case "Mensal": return "Últimos 7 meses"
+        default: return "Últimos 7 dias"
+        }
+    }
+
+    // `dia.data` é o início do período da barra
     @ViewBuilder
     private func barraDia(_ dia: HistoricoDia) -> some View {
-        let ehHoje = dia.data == DataUtil.hoje()
+        let ehAtual = dia.data == DataUtil.periodoAtual(frequencia: rotina.frequencia)
 
         VStack(spacing: 6) {
             Spacer()
@@ -105,21 +123,27 @@ struct EstatisticasView: View {
                     .fill(dia.completoNoDia ? AppTheme.primary : AppTheme.primarySoft)
                     .frame(height: max(8, CGFloat(dia.percentual) * 90))
             }
-            Text(ehHoje ? "Hoje" : diaAbreviado(dia.data))
-                .font(.caption2.weight(ehHoje ? .semibold : .regular))
-                .foregroundColor(ehHoje ? .primary : .secondary)
+            Text(rotuloBarra(dia.data, atual: ehAtual))
+                .font(.caption2.weight(ehAtual ? .semibold : .regular))
+                .foregroundColor(ehAtual ? .primary : .secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
         }
         .frame(maxWidth: .infinity)
     }
 
-    private func diaAbreviado(_ dataString: String) -> String {
-        let formatterEntrada = DateFormatter()
-        formatterEntrada.dateFormat = "yyyy-MM-dd"
-        guard let data = formatterEntrada.date(from: dataString) else { return "" }
+    // Diária: dia da semana ("Seg"); Semanal: domingo que abre a semana ("12/10"); Mensal: mês ("Out")
+    private func rotuloBarra(_ inicioPeriodo: String, atual: Bool) -> String {
+        if atual { return rotina.frequencia == "Diária" ? "Hoje" : "Atual" }
+        guard let data = DataUtil.data(de: inicioPeriodo) else { return "" }
 
-        let formatterSaida = DateFormatter()
-        formatterSaida.dateFormat = "EEE"
-        formatterSaida.locale = Locale(identifier: "pt_BR")
-        return formatterSaida.string(from: data).capitalized
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "pt_BR")
+        switch rotina.frequencia {
+        case "Semanal": formatter.dateFormat = "dd/MM"
+        case "Mensal": formatter.dateFormat = "MMM"
+        default: formatter.dateFormat = "EEE"
+        }
+        return formatter.string(from: data).replacingOccurrences(of: ".", with: "").capitalized
     }
 }

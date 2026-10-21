@@ -6,13 +6,15 @@ class TarefaViewModel: ObservableObject {
     private let dao = TarefaDAO()
     private let historicoDao = HistoricoDAO()
     private let rotinaId: Int64
+    var frequencia: String   // define o período do reset: dia, semana ou mês
 
-    init(rotinaId: Int64) {
+    init(rotinaId: Int64, frequencia: String) {
         self.rotinaId = rotinaId
+        self.frequencia = frequencia
     }
 
     func carregar() {
-        tarefas = dao.listarPorRotina(rotinaId)
+        tarefas = dao.listarPorRotina(rotinaId, frequencia: frequencia)
         registrarProgressoAtual()
     }
 
@@ -35,10 +37,10 @@ class TarefaViewModel: ObservableObject {
         carregar()
     }
 
-    // Sempre que a lista de tarefas muda, atualiza o histórico de hoje
+    // Sempre que a lista de tarefas muda, atualiza o histórico do período atual
     private func registrarProgressoAtual() {
         let total = tarefas.count
         let concluidas = tarefas.filter { $0.concluidaHoje }.count
-        historicoDao.registrarProgressoHoje(rotinaId: rotinaId, total: total, concluidas: concluidas)
+        historicoDao.registrarProgresso(rotinaId: rotinaId, frequencia: frequencia, total: total, concluidas: concluidas)
     }
 }

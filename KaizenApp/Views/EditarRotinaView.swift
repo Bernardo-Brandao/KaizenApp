@@ -12,6 +12,7 @@ struct EditarRotinaView: View {
     @State private var lembreteAtivo: Bool
     @State private var horarioLembrete: Date
     @State private var categoriaId: Int64?
+    @State private var diaLembrete: Int
     @State private var mostrarConfirmacao = false
 
     let opcoesFrequencia = ["Diária", "Semanal", "Mensal"]
@@ -24,6 +25,7 @@ struct EditarRotinaView: View {
         _frequencia = State(initialValue: rotina.frequencia)
         _lembreteAtivo = State(initialValue: rotina.lembreteAtivo)
         _categoriaId = State(initialValue: rotina.categoriaId)
+        _diaLembrete = State(initialValue: rotina.diaLembrete)
 
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm"
@@ -52,12 +54,12 @@ struct EditarRotinaView: View {
                 .pickerStyle(.inline)
             }
 
-            Section("Lembrete") {
-                Toggle("Ativar lembrete diário", isOn: $lembreteAtivo)
-                if lembreteAtivo {
-                    DatePicker("Horário", selection: $horarioLembrete, displayedComponents: .hourAndMinute)
-                }
-            }
+            LembreteSection(
+                frequencia: frequencia,
+                lembreteAtivo: $lembreteAtivo,
+                horario: $horarioLembrete,
+                dia: $diaLembrete
+            )
 
             Section {
                 Button("Salvar alterações") {
@@ -79,6 +81,7 @@ struct EditarRotinaView: View {
         atualizada.frequencia = frequencia
         atualizada.lembreteAtivo = lembreteAtivo
         atualizada.categoriaId = categoriaId
+        atualizada.diaLembrete = diaLembrete
 
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm"

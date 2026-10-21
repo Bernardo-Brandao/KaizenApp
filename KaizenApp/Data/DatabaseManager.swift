@@ -32,6 +32,7 @@ class DatabaseManager {
         let horarioLembrete = Expression<String>("horarioLembrete")
         let lembreteAtivo = Expression<Bool>("lembreteAtivo")
         let categoriaId = Expression<Int64?>("categoriaId")
+        let diaLembrete = Expression<Int>("diaLembrete")
 
         let rotinaId = Expression<Int64>("rotinaId")
         let ordem = Expression<Int>("ordem")
@@ -53,6 +54,7 @@ class DatabaseManager {
             t.column(horarioLembrete, defaultValue: "")
             t.column(lembreteAtivo, defaultValue: false)
             t.column(categoriaId)
+            t.column(diaLembrete, defaultValue: 1)
         })
 
         try? db?.run(tarefas.create(ifNotExists: true) { t in
@@ -86,7 +88,12 @@ class DatabaseManager {
         try? db?.execute("ALTER TABLE rotinas ADD COLUMN horarioLembrete TEXT DEFAULT ''")
         try? db?.execute("ALTER TABLE rotinas ADD COLUMN lembreteAtivo INTEGER DEFAULT 0")
         try? db?.execute("ALTER TABLE rotinas ADD COLUMN categoriaId INTEGER")
+        try? db?.execute("ALTER TABLE rotinas ADD COLUMN diaLembrete INTEGER DEFAULT 1")
         // Dia em que a tarefa foi concluída ("yyyy-MM-dd"); vazio se não concluída
         try? db?.execute("ALTER TABLE tarefas ADD COLUMN dataConclusao TEXT DEFAULT ''")
+
+        // Limpa tarefas e histórico de rotinas que já foram excluídas
+        try? db?.execute("DELETE FROM tarefas WHERE rotinaId NOT IN (SELECT id FROM rotinas)")
+        try? db?.execute("DELETE FROM historico_rotina WHERE rotinaId NOT IN (SELECT id FROM rotinas)")
     }
 }

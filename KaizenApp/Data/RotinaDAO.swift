@@ -13,6 +13,7 @@ class RotinaDAO {
     let horarioLembrete = Expression<String>("horarioLembrete")
     let lembreteAtivo = Expression<Bool>("lembreteAtivo")
     let categoriaId = Expression<Int64?>("categoriaId")
+    let diaLembrete = Expression<Int>("diaLembrete")
 
     // CREATE — agora retorna o id gerado, pra podermos agendar a notificação certa
     @discardableResult
@@ -24,7 +25,8 @@ class RotinaDAO {
             ativa <- rotina.ativa,
             horarioLembrete <- rotina.horarioLembrete,
             lembreteAtivo <- rotina.lembreteAtivo,
-            categoriaId <- rotina.categoriaId
+            categoriaId <- rotina.categoriaId,
+            diaLembrete <- rotina.diaLembrete
         )
         return try? db?.run(insert)
     }
@@ -42,7 +44,8 @@ class RotinaDAO {
                     ativa: row[ativa],
                     horarioLembrete: row[horarioLembrete],
                     lembreteAtivo: row[lembreteAtivo],
-                    categoriaId: row[categoriaId]
+                    categoriaId: row[categoriaId],
+                    diaLembrete: row[diaLembrete]
                 ))
             }
         }
@@ -59,7 +62,8 @@ class RotinaDAO {
             ativa: row[ativa],
             horarioLembrete: row[horarioLembrete],
             lembreteAtivo: row[lembreteAtivo],
-            categoriaId: row[categoriaId]
+            categoriaId: row[categoriaId],
+            diaLembrete: row[diaLembrete]
         )
     }
 
@@ -74,7 +78,8 @@ class RotinaDAO {
             ativa <- rotina.ativa,
             horarioLembrete <- rotina.horarioLembrete,
             lembreteAtivo <- rotina.lembreteAtivo,
-            categoriaId <- rotina.categoriaId
+            categoriaId <- rotina.categoriaId,
+            diaLembrete <- rotina.diaLembrete
         ))
     }
 
@@ -83,5 +88,10 @@ class RotinaDAO {
         guard let rotinaId = rotina.id else { return }
         let registro = table.filter(id == rotinaId)
         try? db?.run(registro.delete())
+
+        // Apaga junto as tarefas e o histórico da rotina, pra não deixar registros órfãos
+        let rotinaIdFK = Expression<Int64>("rotinaId")
+        try? db?.run(Table("tarefas").filter(rotinaIdFK == rotinaId).delete())
+        try? db?.run(Table("historico_rotina").filter(rotinaIdFK == rotinaId).delete())
     }
 }
