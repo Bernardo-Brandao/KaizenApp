@@ -41,8 +41,18 @@ class EstatisticasViewModel: ObservableObject {
         historico.count
     }
 
-    // Os últimos 7 dias, do mais antigo pro mais recente (pra desenhar da esquerda pra direita)
+    // Os 7 dias do calendário até hoje, do mais antigo pro mais recente (pra desenhar da esquerda pra direita).
+    // Dias sem registro entram com id nil e 0 tarefas, pra aparecerem como barra vazia.
     var ultimos7Dias: [HistoricoDia] {
-        Array(historico.prefix(7)).reversed()
+        let porData = Dictionary(historico.map { ($0.data, $0) }, uniquingKeysWith: { primeiro, _ in primeiro })
+
+        var dias: [String] = [DataUtil.hoje()]
+        while dias.count < 7, let anterior = DataUtil.diaAnterior(a: dias[dias.count - 1]) {
+            dias.append(anterior)
+        }
+
+        return dias.reversed().map { data in
+            porData[data] ?? HistoricoDia(id: nil, rotinaId: rotinaId, data: data, totalTarefas: 0, tarefasConcluidas: 0)
+        }
     }
 }
