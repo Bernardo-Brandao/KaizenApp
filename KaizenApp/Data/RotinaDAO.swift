@@ -12,6 +12,7 @@ class RotinaDAO {
     let ativa = Expression<Bool>("ativa")
     let horarioLembrete = Expression<String>("horarioLembrete")
     let lembreteAtivo = Expression<Bool>("lembreteAtivo")
+    let categoriaId = Expression<Int64?>("categoriaId")
 
     // CREATE — agora retorna o id gerado, pra podermos agendar a notificação certa
     @discardableResult
@@ -22,7 +23,8 @@ class RotinaDAO {
             frequencia <- rotina.frequencia,
             ativa <- rotina.ativa,
             horarioLembrete <- rotina.horarioLembrete,
-            lembreteAtivo <- rotina.lembreteAtivo
+            lembreteAtivo <- rotina.lembreteAtivo,
+            categoriaId <- rotina.categoriaId
         )
         return try? db?.run(insert)
     }
@@ -39,7 +41,8 @@ class RotinaDAO {
                     frequencia: row[frequencia],
                     ativa: row[ativa],
                     horarioLembrete: row[horarioLembrete],
-                    lembreteAtivo: row[lembreteAtivo]
+                    lembreteAtivo: row[lembreteAtivo],
+                    categoriaId: row[categoriaId]
                 ))
             }
         }
@@ -56,7 +59,8 @@ class RotinaDAO {
             frequencia <- rotina.frequencia,
             ativa <- rotina.ativa,
             horarioLembrete <- rotina.horarioLembrete,
-            lembreteAtivo <- rotina.lembreteAtivo
+            lembreteAtivo <- rotina.lembreteAtivo,
+            categoriaId <- rotina.categoriaId
         ))
     }
 

@@ -11,6 +11,7 @@ struct EditarRotinaView: View {
     @State private var frequencia: String
     @State private var lembreteAtivo: Bool
     @State private var horarioLembrete: Date
+    @State private var categoriaId: Int64?
     @State private var mostrarConfirmacao = false
 
     let opcoesFrequencia = ["Diária", "Semanal", "Mensal"]
@@ -22,6 +23,7 @@ struct EditarRotinaView: View {
         _descricao = State(initialValue: rotina.descricao)
         _frequencia = State(initialValue: rotina.frequencia)
         _lembreteAtivo = State(initialValue: rotina.lembreteAtivo)
+        _categoriaId = State(initialValue: rotina.categoriaId)
 
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm"
@@ -38,6 +40,8 @@ struct EditarRotinaView: View {
                 TextField("Nome da rotina", text: $nome)
                 TextField("Descrição", text: $descricao)
             }
+
+            CategoriaPickerSection(categoriaId: $categoriaId)
 
             Section("Frequência") {
                 Picker("Frequência", selection: $frequencia) {
@@ -74,6 +78,7 @@ struct EditarRotinaView: View {
         atualizada.descricao = descricao
         atualizada.frequencia = frequencia
         atualizada.lembreteAtivo = lembreteAtivo
+        atualizada.categoriaId = categoriaId
 
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm"

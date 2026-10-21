@@ -9,6 +9,7 @@ struct NovaRotinaView: View {
     @State private var frequencia = "Diária"
     @State private var lembreteAtivo = false
     @State private var horarioLembrete = Date()
+    @State private var categoriaId: Int64?
     @State private var mostrarConfirmacao = false
 
     let opcoesFrequencia = ["Diária", "Semanal", "Mensal"]
@@ -19,6 +20,8 @@ struct NovaRotinaView: View {
                 TextField("Nome da rotina", text: $nome)
                 TextField("Descrição", text: $descricao)
             }
+
+            CategoriaPickerSection(categoriaId: $categoriaId)
 
             Section("Frequência") {
                 Picker("Frequência", selection: $frequencia) {
@@ -59,7 +62,8 @@ struct NovaRotinaView: View {
             descricao: descricao,
             frequencia: frequencia,
             horarioLembrete: horarioTexto,
-            lembreteAtivo: lembreteAtivo
+            lembreteAtivo: lembreteAtivo,
+            categoriaId: categoriaId
         )
         mostrarConfirmacao = true
     }
