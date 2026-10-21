@@ -26,12 +26,20 @@ class TarefaViewModel: ObservableObject {
         atualizarLembrete()
     }
 
-    func alternarConcluida(_ tarefa: Tarefa) {
+    // Retorna true quando esse toque completou a rotina no período (pra comemorar)
+    @discardableResult
+    func alternarConcluida(_ tarefa: Tarefa) -> Bool {
+        let estavaCompleta = rotinaCompleta
         var atualizada = tarefa
         atualizada.concluidaHoje.toggle()
         dao.atualizar(atualizada)
         carregar()
         atualizarLembrete()
+        return !estavaCompleta && rotinaCompleta
+    }
+
+    var rotinaCompleta: Bool {
+        !tarefas.isEmpty && tarefas.allSatisfy { $0.concluidaHoje }
     }
 
     func renomear(_ tarefa: Tarefa, para nome: String) {
