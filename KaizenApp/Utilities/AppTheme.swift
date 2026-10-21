@@ -14,7 +14,7 @@ enum AppTheme {
     static let cardBackground = Color(.secondarySystemBackground)
 }
 
-// Helper pra converter cores em hex (ex: "3DA9FC") em Color do SwiftUI
+// Helper pra converter cores em hex em Color do SwiftUI
 extension Color {
     init(hex: String) {
         var hexSanitized = hex.trimmingCharacters(in: .whitespacesAndNewlines)
