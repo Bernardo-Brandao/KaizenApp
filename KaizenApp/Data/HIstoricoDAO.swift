@@ -11,15 +11,9 @@ class HistoricoDAO {
     let totalTarefas = Expression<Int>("totalTarefas")
     let tarefasConcluidas = Expression<Int>("tarefasConcluidas")
 
-    private func hojeString() -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.string(from: Date())
-    }
-
     // Registra (ou atualiza) o progresso de hoje para uma rotina
     func registrarProgressoHoje(rotinaId rid: Int64, total: Int, concluidas: Int) {
-        let hoje = hojeString()
+        let hoje = DataUtil.hoje()
         let existente = table.filter(rotinaId == rid && data == hoje)
 
         if let _ = try? db?.pluck(existente) {

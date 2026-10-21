@@ -10,13 +10,15 @@ class TarefaDAO {
     let nome = Expression<String>("nome")
     let ordem = Expression<Int>("ordem")
     let concluidaHoje = Expression<Bool>("concluidaHoje")
+    let dataConclusao = Expression<String>("dataConclusao")
 
     func inserir(_ tarefa: Tarefa) {
         let insert = table.insert(
             rotinaId <- tarefa.rotinaId,
             nome <- tarefa.nome,
             ordem <- tarefa.ordem,
-            concluidaHoje <- tarefa.concluidaHoje
+            concluidaHoje <- tarefa.concluidaHoje,
+            dataConclusao <- (tarefa.concluidaHoje ? DataUtil.hoje() : "")
         )
         try? db?.run(insert)
     }
@@ -24,14 +26,16 @@ class TarefaDAO {
     func listarPorRotina(_ idRotina: Int64) -> [Tarefa] {
         var lista: [Tarefa] = []
         let query = table.filter(rotinaId == idRotina).order(ordem)
+        let hoje = DataUtil.hoje()
         if let rows = try? db?.prepare(query) {
             for row in rows {
+                // Só conta como concluída se foi marcada hoje — assim a lista "reseta" a cada dia
                 lista.append(Tarefa(
                     id: row[id],
                     rotinaId: row[rotinaId],
                     nome: row[nome],
                     ordem: row[ordem],
-                    concluidaHoje: row[concluidaHoje]
+                    concluidaHoje: row[dataConclusao] == hoje
                 ))
             }
         }
@@ -43,7 +47,8 @@ class TarefaDAO {
         let registro = table.filter(id == tarefaId)
         try? db?.run(registro.update(
             nome <- tarefa.nome,
-            concluidaHoje <- tarefa.concluidaHoje
+            concluidaHoje <- tarefa.concluidaHoje,
+            dataConclusao <- (tarefa.concluidaHoje ? DataUtil.hoje() : "")
         ))
     }
 

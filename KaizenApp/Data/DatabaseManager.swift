@@ -35,6 +35,7 @@ class DatabaseManager {
         let rotinaId = Expression<Int64>("rotinaId")
         let ordem = Expression<Int>("ordem")
         let concluidaHoje = Expression<Bool>("concluidaHoje")
+        let dataConclusao = Expression<String>("dataConclusao")
 
         let corHex = Expression<String>("corHex")
 
@@ -58,6 +59,7 @@ class DatabaseManager {
             t.column(nome)
             t.column(ordem)
             t.column(concluidaHoje)
+            t.column(dataConclusao, defaultValue: "")
         })
 
         try? db?.run(categorias.create(ifNotExists: true) { t in
@@ -81,5 +83,7 @@ class DatabaseManager {
     private func migrarTabelas() {
         try? db?.execute("ALTER TABLE rotinas ADD COLUMN horarioLembrete TEXT DEFAULT ''")
         try? db?.execute("ALTER TABLE rotinas ADD COLUMN lembreteAtivo INTEGER DEFAULT 0")
+        // Dia em que a tarefa foi concluída ("yyyy-MM-dd"); vazio se não concluída
+        try? db?.execute("ALTER TABLE tarefas ADD COLUMN dataConclusao TEXT DEFAULT ''")
     }
 }
