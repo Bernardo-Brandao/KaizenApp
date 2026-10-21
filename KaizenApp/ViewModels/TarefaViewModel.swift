@@ -32,6 +32,27 @@ class TarefaViewModel: ObservableObject {
         carregar()
     }
 
+    func renomear(_ tarefa: Tarefa, para nome: String) {
+        let nomeLimpo = nome.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !nomeLimpo.isEmpty else { return }
+        dao.renomear(tarefa, para: nomeLimpo)
+        carregar()
+    }
+
+    func mover(de origem: IndexSet, para destino: Int) {
+        // Mesmo comportamento do .onMove da List: `destino` é a posição antes da remoção
+        let movidas = origem.map { tarefas[$0] }
+        var reordenadas = tarefas
+        for indice in origem.sorted(by: >) {
+            reordenadas.remove(at: indice)
+        }
+        let insercao = destino - origem.filter { $0 < destino }.count
+        reordenadas.insert(contentsOf: movidas, at: insercao)
+
+        dao.salvarOrdem(reordenadas)
+        carregar()
+    }
+
     func excluir(_ tarefa: Tarefa) {
         dao.excluir(tarefa)
         carregar()
