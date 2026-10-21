@@ -10,14 +10,30 @@
 		0C749C7030806D5C004DFAFB /* SQLite in Frameworks */ = {isa = PBXBuildFile; productRef = 0C749C6F30806D5C004DFAFB /* SQLite */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		0CA1E0013080A00000000007 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0C596A813024256F0093D362 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0C596A88302425700093D362;
+			remoteInfo = KaizenApp;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		0C596A89302425700093D362 /* KaizenApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KaizenApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0CA1E0013080A00000000001 /* KaizenAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = KaizenAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		0C596A8B302425700093D362 /* KaizenApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = KaizenApp;
+			sourceTree = "<group>";
+		};
+		0CA1E0013080A00000000002 /* KaizenAppTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = KaizenAppTests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -29,6 +45,11 @@
 				0C749C7030806D5C004DFAFB /* SQLite in Frameworks */,
 			);
 		};
+		0CA1E0013080A00000000003 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -36,6 +57,7 @@
 			isa = PBXGroup;
 			children = (
 				0C596A8B302425700093D362 /* KaizenApp */,
+				0CA1E0013080A00000000002 /* KaizenAppTests */,
 				0C749C6D30806D2F004DFAFB /* Frameworks */,
 				0C596A8A302425700093D362 /* Products */,
 			);
@@ -45,6 +67,7 @@
 			isa = PBXGroup;
 			children = (
 				0C596A89302425700093D362 /* KaizenApp.app */,
+				0CA1E0013080A00000000001 /* KaizenAppTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -80,6 +103,27 @@
 			productReference = 0C596A89302425700093D362 /* KaizenApp.app */;
 			productType = "com.apple.product-type.application";
 		};
+		0CA1E0013080A00000000006 /* KaizenAppTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0CA1E0013080A0000000000B /* Build configuration list for PBXNativeTarget "KaizenAppTests" */;
+			buildPhases = (
+				0CA1E0013080A00000000004 /* Sources */,
+				0CA1E0013080A00000000003 /* Frameworks */,
+				0CA1E0013080A00000000005 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				0CA1E0013080A00000000008 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				0CA1E0013080A00000000002 /* KaizenAppTests */,
+			);
+			name = KaizenAppTests;
+			productName = KaizenAppTests;
+			productReference = 0CA1E0013080A00000000001 /* KaizenAppTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -92,6 +136,10 @@
 				TargetAttributes = {
 					0C596A88302425700093D362 = {
 						CreatedOnToolsVersion = 27.0;
+					};
+					0CA1E0013080A00000000006 = {
+						CreatedOnToolsVersion = 27.0;
+						TestTargetID = 0C596A88302425700093D362;
 					};
 				};
 			};
@@ -113,12 +161,18 @@
 			projectRoot = "";
 			targets = (
 				0C596A88302425700093D362 /* KaizenApp */,
+				0CA1E0013080A00000000006 /* KaizenAppTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		0C596A87302425700093D362 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
+		};
+		0CA1E0013080A00000000005 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			files = (
 			);
@@ -131,7 +185,20 @@
 			files = (
 			);
 		};
+		0CA1E0013080A00000000004 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+			);
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		0CA1E0013080A00000000008 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0C596A88302425700093D362 /* KaizenApp */;
+			targetProxy = 0CA1E0013080A00000000007 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		0C596A92302425700093D362 /* Debug configuration for PBXProject "KaizenApp" */ = {
@@ -323,6 +390,50 @@
 			};
 			name = Release;
 		};
+		0CA1E0013080A00000000009 /* Debug configuration for PBXNativeTarget "KaizenAppTests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8A28974Y2L;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.bernardobrandao.projeto.KaizenAppTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/KaizenApp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/KaizenApp";
+			};
+			name = Debug;
+		};
+		0CA1E0013080A0000000000A /* Release configuration for PBXNativeTarget "KaizenAppTests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8A28974Y2L;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.bernardobrandao.projeto.KaizenAppTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/KaizenApp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/KaizenApp";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -339,6 +450,14 @@
 			buildConfigurations = (
 				0C596A95302425700093D362 /* Debug configuration for PBXNativeTarget "KaizenApp" */,
 				0C596A96302425700093D362 /* Release configuration for PBXNativeTarget "KaizenApp" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		0CA1E0013080A0000000000B /* Build configuration list for PBXNativeTarget "KaizenAppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0CA1E0013080A00000000009 /* Debug configuration for PBXNativeTarget "KaizenAppTests" */,
+				0CA1E0013080A0000000000A /* Release configuration for PBXNativeTarget "KaizenAppTests" */,
 			);
 			defaultConfigurationName = Release;
 		};

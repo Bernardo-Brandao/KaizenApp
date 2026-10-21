@@ -52,8 +52,14 @@ enum DataUtil {
         }
     }
 
-    static func periodoAtual(frequencia: String) -> String {
-        inicioPeriodo(hoje(), frequencia: frequencia)
+    static func periodoAtual(frequencia: String, hoje dia: String = hoje()) -> String {
+        inicioPeriodo(dia, frequencia: frequencia)
+    }
+
+    // Uma conclusão em `dataConclusao` vale se caiu no período atual (vazio = não concluída)
+    static func concluidaNoPeriodoAtual(_ dataConclusao: String, frequencia: String, hoje dia: String = hoje()) -> Bool {
+        !dataConclusao.isEmpty
+            && inicioPeriodo(dataConclusao, frequencia: frequencia) == periodoAtual(frequencia: frequencia, hoje: dia)
     }
 
     // Início do período anterior a um início de período
