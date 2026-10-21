@@ -14,16 +14,18 @@ class EstatisticasViewModel: ObservableObject {
         historico = dao.listarPorRotina(rotinaId)
     }
 
-    // Sequência atual de dias consecutivos com 100% das tarefas concluídas,
-    // contando a partir do dia mais recente registrado
+    // Sequência atual de dias de calendário seguidos com 100% das tarefas concluídas.
+    // Hoje só entra se já estiver completo — enquanto o dia está em andamento, conta a partir de ontem.
+    // Um dia sem registro (app não aberto) quebra a sequência.
     var streakAtual: Int {
+        let completos = Set(historico.filter { $0.completoNoDia }.map { $0.data })
+        let hoje = DataUtil.hoje()
+
+        var dia: String? = completos.contains(hoje) ? hoje : DataUtil.diaAnterior(a: hoje)
         var streak = 0
-        for dia in historico {
-            if dia.completoNoDia {
-                streak += 1
-            } else {
-                break
-            }
+        while let atual = dia, completos.contains(atual) {
+            streak += 1
+            dia = DataUtil.diaAnterior(a: atual)
         }
         return streak
     }

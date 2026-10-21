@@ -5,6 +5,7 @@ struct DetalheRotinaView: View {
     @StateObject private var viewModel: TarefaViewModel
     @State private var novaTarefaNome = ""
     @State private var mostrarCampoNovaTarefa = false
+    @Environment(\.scenePhase) private var scenePhase
 
     init(rotina: Rotina) {
         self.rotina = rotina
@@ -101,6 +102,10 @@ struct DetalheRotinaView: View {
             }
         }
         .onAppear { viewModel.carregar() }
+        // Recarrega ao voltar pro app — se virou o dia, as tarefas aparecem desmarcadas
+        .onChange(of: scenePhase) { _, fase in
+            if fase == .active { viewModel.carregar() }
+        }
     }
 }
 
