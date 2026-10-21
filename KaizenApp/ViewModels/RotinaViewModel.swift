@@ -34,6 +34,7 @@ class RotinaViewModel: ObservableObject {
             )
         }
         progresso = novoProgresso
+        WidgetSync.atualizar()
     }
 
     func adicionar(nome: String, descricao: String, frequencia: String, horarioLembrete: String, lembreteAtivo: Bool, diaLembrete: Int, categoriaId: Int64?) {

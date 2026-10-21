@@ -71,6 +71,18 @@ enum DataUtil {
         }
     }
 
+    // Momento em que começa o próximo período (meia-noite do dia seguinte, do próximo domingo ou do dia 1)
+    static func inicioProximoPeriodo(frequencia: String, hoje dia: String = hoje()) -> Date? {
+        let atual = periodoAtual(frequencia: frequencia, hoje: dia)
+        let proximo: String?
+        switch frequencia {
+        case "Semanal": proximo = somar(7, .day, a: atual)
+        case "Mensal": proximo = somar(1, .month, a: atual)
+        default: proximo = somar(1, .day, a: atual)
+        }
+        return proximo.flatMap(data(de:))
+    }
+
     private static func somar(_ valor: Int, _ componente: Calendar.Component, a dia: String) -> String? {
         guard let data = data(de: dia),
               let resultado = calendario.date(byAdding: componente, value: valor, to: data)
