@@ -4,6 +4,7 @@ import Combine
 class TarefaViewModel: ObservableObject {
     @Published var tarefas: [Tarefa] = []
     private let dao = TarefaDAO()
+    private let historicoDao = HistoricoDAO()
     private let rotinaId: Int64
 
     init(rotinaId: Int64) {
@@ -12,6 +13,7 @@ class TarefaViewModel: ObservableObject {
 
     func carregar() {
         tarefas = dao.listarPorRotina(rotinaId)
+        registrarProgressoAtual()
     }
 
     func adicionar(nome: String) {
@@ -31,5 +33,12 @@ class TarefaViewModel: ObservableObject {
     func excluir(_ tarefa: Tarefa) {
         dao.excluir(tarefa)
         carregar()
+    }
+
+    // Sempre que a lista de tarefas muda, atualiza o histórico de hoje
+    private func registrarProgressoAtual() {
+        let total = tarefas.count
+        let concluidas = tarefas.filter { $0.concluidaHoje }.count
+        historicoDao.registrarProgressoHoje(rotinaId: rotinaId, total: total, concluidas: concluidas)
     }
 }
