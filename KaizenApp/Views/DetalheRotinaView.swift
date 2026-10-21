@@ -1,14 +1,15 @@
 import SwiftUI
 
 struct DetalheRotinaView: View {
-    let rotina: Rotina
+    @State private var rotina: Rotina      // recarregada do banco ao aparecer, pra refletir edições
+    @State private var categoria: Categoria?
     @StateObject private var viewModel: TarefaViewModel
     @State private var novaTarefaNome = ""
     @State private var mostrarCampoNovaTarefa = false
     @Environment(\.scenePhase) private var scenePhase
 
     init(rotina: Rotina) {
-        self.rotina = rotina
+        _rotina = State(initialValue: rotina)
         _viewModel = StateObject(wrappedValue: TarefaViewModel(rotinaId: rotina.id ?? 0))
     }
 
@@ -31,9 +32,14 @@ struct DetalheRotinaView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(rotina.nome)
                         .font(.largeTitle.bold())
-                    Text(rotina.frequencia)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                    HStack(spacing: 8) {
+                        Text(rotina.frequencia)
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        if let categoria {
+                            CategoriaTag(categoria: categoria)
+                        }
+                    }
 
                     ProgressView(value: progresso)
                         .tint(AppTheme.primary)
@@ -101,11 +107,22 @@ struct DetalheRotinaView: View {
                 }
             }
         }
-        .onAppear { viewModel.carregar() }
+        .onAppear {
+            recarregarRotina()
+            viewModel.carregar()
+        }
         // Recarrega ao voltar pro app — se virou o dia, as tarefas aparecem desmarcadas
         .onChange(of: scenePhase) { _, fase in
             if fase == .active { viewModel.carregar() }
         }
+    }
+
+    // Busca a versão salva da rotina (pode ter sido editada) e a categoria dela
+    private func recarregarRotina() {
+        if let id = rotina.id, let salva = RotinaDAO().buscar(id: id) {
+            rotina = salva
+        }
+        categoria = CategoriaDAO().listarTodas().first { $0.id == rotina.categoriaId }
     }
 }
 

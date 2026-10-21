@@ -49,6 +49,20 @@ class RotinaDAO {
         return lista
     }
 
+    func buscar(id rotinaId: Int64) -> Rotina? {
+        guard let row = try? db?.pluck(table.filter(id == rotinaId)) else { return nil }
+        return Rotina(
+            id: row[id],
+            nome: row[nome],
+            descricao: row[descricao],
+            frequencia: row[frequencia],
+            ativa: row[ativa],
+            horarioLembrete: row[horarioLembrete],
+            lembreteAtivo: row[lembreteAtivo],
+            categoriaId: row[categoriaId]
+        )
+    }
+
     // UPDATE
     func atualizar(_ rotina: Rotina) {
         guard let rotinaId = rotina.id else { return }
