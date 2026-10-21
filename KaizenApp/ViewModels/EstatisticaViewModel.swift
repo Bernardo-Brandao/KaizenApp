@@ -16,9 +16,13 @@ class EstatisticasViewModel: ObservableObject {
     func carregar() {
         historico = dao.listarPorRotina(rotinaId)
 
-        // Todo período que teve pelo menos um dia de pausa fica "neutro"
+        periodosPausados = Self.periodosPausados(PausaDAO().listar(rotinaId: rotinaId), frequencia: frequencia)
+    }
+
+    // Todo período que teve pelo menos um dia de pausa fica "neutro"
+    static func periodosPausados(_ pausas: [(inicio: String, fim: String)], frequencia: String) -> Set<String> {
         var pausados: Set<String> = []
-        for pausa in PausaDAO().listar(rotinaId: rotinaId) {
+        for pausa in pausas {
             let primeiro = DataUtil.inicioPeriodo(pausa.inicio, frequencia: frequencia)
             var periodo: String? = DataUtil.inicioPeriodo(pausa.fim, frequencia: frequencia)
             while let p = periodo, p >= primeiro {   // "yyyy-MM-dd" compara certo como texto
@@ -26,7 +30,7 @@ class EstatisticasViewModel: ObservableObject {
                 periodo = DataUtil.periodoAnterior(a: p, frequencia: frequencia)
             }
         }
-        periodosPausados = pausados
+        return pausados
     }
 
     // Histórico com um registro por período (dia, semana ou mês), indexado pelo início do período.
@@ -49,14 +53,20 @@ class EstatisticasViewModel: ObservableObject {
     // Período pausado é neutro: conta se foi completado, senão é pulado sem quebrar.
     var streakAtual: Int {
         let completos = Set(porPeriodo.filter { $0.value.completoNoDia }.keys)
-        let atual = DataUtil.periodoAtual(frequencia: frequencia)
+        return Self.calcularStreak(completos: completos, pausados: periodosPausados, frequencia: frequencia)
+    }
+
+    // `completos` e `pausados` são inícios de período
+    static func calcularStreak(completos: Set<String>, pausados: Set<String>,
+                               frequencia: String, hoje: String = DataUtil.hoje()) -> Int {
+        let atual = DataUtil.periodoAtual(frequencia: frequencia, hoje: hoje)
 
         var periodo: String? = completos.contains(atual) ? atual : DataUtil.periodoAnterior(a: atual, frequencia: frequencia)
         var streak = 0
         while let p = periodo {
             if completos.contains(p) {
                 streak += 1
-            } else if !periodosPausados.contains(p) {
+            } else if !pausados.contains(p) {
                 break
             }
             periodo = DataUtil.periodoAnterior(a: p, frequencia: frequencia)

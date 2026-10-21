@@ -23,6 +23,7 @@ class TarefaViewModel: ObservableObject {
         let nova = Tarefa(id: nil, rotinaId: rotinaId, nome: nome, ordem: novaOrdem, concluidaHoje: false)
         dao.inserir(nova)
         carregar()
+        atualizarLembrete()
     }
 
     func alternarConcluida(_ tarefa: Tarefa) {
@@ -30,6 +31,7 @@ class TarefaViewModel: ObservableObject {
         atualizada.concluidaHoje.toggle()
         dao.atualizar(atualizada)
         carregar()
+        atualizarLembrete()
     }
 
     func renomear(_ tarefa: Tarefa, para nome: String) {
@@ -40,22 +42,31 @@ class TarefaViewModel: ObservableObject {
     }
 
     func mover(de origem: IndexSet, para destino: Int) {
-        // Mesmo comportamento do .onMove da List: `destino` é a posição antes da remoção
-        let movidas = origem.map { tarefas[$0] }
-        var reordenadas = tarefas
+        dao.salvarOrdem(Self.reordenar(tarefas, de: origem, para: destino))
+        carregar()
+    }
+
+    // Mesmo comportamento do .onMove da List: `destino` é a posição antes da remoção
+    static func reordenar<T>(_ itens: [T], de origem: IndexSet, para destino: Int) -> [T] {
+        let movidos = origem.map { itens[$0] }
+        var reordenados = itens
         for indice in origem.sorted(by: >) {
-            reordenadas.remove(at: indice)
+            reordenados.remove(at: indice)
         }
         let insercao = destino - origem.filter { $0 < destino }.count
-        reordenadas.insert(contentsOf: movidas, at: insercao)
-
-        dao.salvarOrdem(reordenadas)
-        carregar()
+        reordenados.insert(contentsOf: movidos, at: insercao)
+        return reordenados
     }
 
     func excluir(_ tarefa: Tarefa) {
         dao.excluir(tarefa)
         carregar()
+        atualizarLembrete()
+    }
+
+    // Completar (ou deixar de completar) a rotina muda se o lembrete do período ainda precisa tocar
+    private func atualizarLembrete() {
+        NotificationManager.shared.atualizarLembrete(rotinaId: rotinaId)
     }
 
     // Sempre que a lista de tarefas muda, atualiza o histórico do período atual
