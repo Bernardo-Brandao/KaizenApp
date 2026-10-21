@@ -11,10 +11,11 @@ class HistoricoDAO {
     let totalTarefas = Expression<Int>("totalTarefas")
     let tarefasConcluidas = Expression<Int>("tarefasConcluidas")
 
-    // Registra (ou atualiza) o progresso de hoje para uma rotina
-    func registrarProgressoHoje(rotinaId rid: Int64, total: Int, concluidas: Int) {
-        let hoje = DataUtil.hoje()
-        let existente = table.filter(rotinaId == rid && data == hoje)
+    // Registra (ou atualiza) o progresso do período atual de uma rotina.
+    // A coluna "data" guarda o início do período: o dia, o domingo da semana ou o dia 1 do mês
+    func registrarProgresso(rotinaId rid: Int64, frequencia: String, total: Int, concluidas: Int) {
+        let periodo = DataUtil.periodoAtual(frequencia: frequencia)
+        let existente = table.filter(rotinaId == rid && data == periodo)
 
         if let _ = try? db?.pluck(existente) {
             try? db?.run(existente.update(
@@ -24,7 +25,7 @@ class HistoricoDAO {
         } else {
             try? db?.run(table.insert(
                 rotinaId <- rid,
-                data <- hoje,
+                data <- periodo,
                 totalTarefas <- total,
                 tarefasConcluidas <- concluidas
             ))

@@ -9,7 +9,7 @@ class RotinaViewModel: ObservableObject {
         rotinas = dao.listarTodas()
     }
 
-    func adicionar(nome: String, descricao: String, frequencia: String, horarioLembrete: String, lembreteAtivo: Bool, categoriaId: Int64?) {
+    func adicionar(nome: String, descricao: String, frequencia: String, horarioLembrete: String, lembreteAtivo: Bool, diaLembrete: Int, categoriaId: Int64?) {
         let nova = Rotina(
             id: nil,
             nome: nome,
@@ -18,7 +18,8 @@ class RotinaViewModel: ObservableObject {
             ativa: true,
             horarioLembrete: horarioLembrete,
             lembreteAtivo: lembreteAtivo,
-            categoriaId: categoriaId
+            categoriaId: categoriaId,
+            diaLembrete: diaLembrete
         )
 
         if let novoId = dao.inserir(nova) {

@@ -10,7 +10,7 @@ struct DetalheRotinaView: View {
 
     init(rotina: Rotina) {
         _rotina = State(initialValue: rotina)
-        _viewModel = StateObject(wrappedValue: TarefaViewModel(rotinaId: rotina.id ?? 0))
+        _viewModel = StateObject(wrappedValue: TarefaViewModel(rotinaId: rotina.id ?? 0, frequencia: rotina.frequencia))
     }
 
     let colunas = [
@@ -122,6 +122,7 @@ struct DetalheRotinaView: View {
         if let id = rotina.id, let salva = RotinaDAO().buscar(id: id) {
             rotina = salva
         }
+        viewModel.frequencia = rotina.frequencia
         categoria = CategoriaDAO().listarTodas().first { $0.id == rotina.categoriaId }
     }
 }

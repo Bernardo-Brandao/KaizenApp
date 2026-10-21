@@ -23,19 +23,23 @@ class TarefaDAO {
         try? db?.run(insert)
     }
 
-    func listarPorRotina(_ idRotina: Int64) -> [Tarefa] {
+    func listarPorRotina(_ idRotina: Int64, frequencia: String) -> [Tarefa] {
         var lista: [Tarefa] = []
         let query = table.filter(rotinaId == idRotina).order(ordem)
-        let hoje = DataUtil.hoje()
+        let periodoAtual = DataUtil.periodoAtual(frequencia: frequencia)
         if let rows = try? db?.prepare(query) {
             for row in rows {
-                // Só conta como concluída se foi marcada hoje — assim a lista "reseta" a cada dia
+                // Só conta como concluída se foi marcada no período atual (dia, semana ou mês) —
+                // assim a lista "reseta" quando começa um período novo
+                let conclusao = row[dataConclusao]
+                let concluida = !conclusao.isEmpty
+                    && DataUtil.inicioPeriodo(conclusao, frequencia: frequencia) == periodoAtual
                 lista.append(Tarefa(
                     id: row[id],
                     rotinaId: row[rotinaId],
                     nome: row[nome],
                     ordem: row[ordem],
-                    concluidaHoje: row[dataConclusao] == hoje
+                    concluidaHoje: concluida
                 ))
             }
         }

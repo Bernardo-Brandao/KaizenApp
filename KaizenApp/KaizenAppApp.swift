@@ -4,6 +4,7 @@ import SwiftUI
 struct KaizenAppApp: App {
     init() {
         NotificationManager.shared.solicitarPermissao()
+        NotificationManager.shared.reagendarTodos()
     }
 
     var body: some Scene {

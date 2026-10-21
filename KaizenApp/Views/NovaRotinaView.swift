@@ -10,6 +10,7 @@ struct NovaRotinaView: View {
     @State private var lembreteAtivo = false
     @State private var horarioLembrete = Date()
     @State private var categoriaId: Int64?
+    @State private var diaLembrete = 1
     @State private var mostrarConfirmacao = false
 
     let opcoesFrequencia = ["Diária", "Semanal", "Mensal"]
@@ -32,12 +33,12 @@ struct NovaRotinaView: View {
                 .pickerStyle(.inline)
             }
 
-            Section("Lembrete") {
-                Toggle("Ativar lembrete diário", isOn: $lembreteAtivo)
-                if lembreteAtivo {
-                    DatePicker("Horário", selection: $horarioLembrete, displayedComponents: .hourAndMinute)
-                }
-            }
+            LembreteSection(
+                frequencia: frequencia,
+                lembreteAtivo: $lembreteAtivo,
+                horario: $horarioLembrete,
+                dia: $diaLembrete
+            )
 
             Section {
                 Button("Salvar rotina") {
@@ -63,6 +64,7 @@ struct NovaRotinaView: View {
             frequencia: frequencia,
             horarioLembrete: horarioTexto,
             lembreteAtivo: lembreteAtivo,
+            diaLembrete: diaLembrete,
             categoriaId: categoriaId
         )
         mostrarConfirmacao = true
