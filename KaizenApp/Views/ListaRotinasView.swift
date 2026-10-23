@@ -8,6 +8,8 @@ struct ListaRotinasView: View {
     @State private var busca = ""
     @State private var rotinaParaExcluir: Rotina?
     @State private var mostrarConfirmacaoExclusao = false
+    @State private var mostrarNovaRotina = false
+    @State private var mostrarModelos = false
     @Environment(\.scenePhase) private var scenePhase
 
     var rotinasFiltradas: [Rotina] {
@@ -123,8 +125,11 @@ struct ListaRotinasView: View {
                     } description: {
                         Text("Uma rotina junta as tarefas que você quer repetir todo dia, semana ou mês.")
                     } actions: {
-                        NavigationLink("Criar rotina") { NovaRotinaView(viewModel: viewModel) }
-                            .buttonStyle(.borderedProminent)
+                        VStack(spacing: 10) {
+                            Button("Usar um modelo") { mostrarModelos = true }
+                                .buttonStyle(.borderedProminent)
+                            Button("Criar do zero") { mostrarNovaRotina = true }
+                        }
                     }
                 } else if rotinasFiltradas.isEmpty {
                     ContentUnavailableView.search(text: busca)
@@ -132,14 +137,35 @@ struct ListaRotinasView: View {
             }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    NavigationLink(destination: NovaRotinaView(viewModel: viewModel)) {
+                    Menu {
+                        Button { mostrarNovaRotina = true } label: {
+                            Label("Nova rotina", systemImage: "square.and.pencil")
+                        }
+                        Button { mostrarModelos = true } label: {
+                            Label("Usar um modelo", systemImage: "square.grid.2x2")
+                        }
+                    } label: {
                         Image(systemName: "plus")
                     }
+                    .accessibilityLabel("Adicionar rotina")
                 }
             }
             // Recarrega ao voltar pro app — se começou um período novo, o progresso zera
             .onChange(of: scenePhase) { _, fase in
                 if fase == .active { viewModel.carregar() }
+            }
+            .navigationDestination(isPresented: $mostrarNovaRotina) {
+                NovaRotinaView(viewModel: viewModel)
+            }
+            .navigationDestination(isPresented: $mostrarModelos) {
+                ModelosView(viewModel: viewModel) { id in
+                    // Volta da galeria e abre a página da rotina recém-criada
+                    mostrarModelos = false
+                    Task {
+                        try? await Task.sleep(for: .milliseconds(450))
+                        rotinaAberta = RotinaDAO().buscar(id: id)
+                    }
+                }
             }
             .navigationDestination(item: $rotinaAberta) { rotina in
                 DetalheRotinaView(rotina: rotina)
