@@ -9,7 +9,7 @@ struct ResumoRotinasIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<String> & ProvidesDialog {
-        let texto = Self.resumo(ResumoWidget.carregar().filter { $0.total > 0 }, agora: .now)
+        let texto = Self.resumo(ResumoWidget.carregar().filter { $0.total > 0 && $0.programadaHoje }, agora: .now)
         return .result(value: texto, dialog: "\(texto)")
     }
 

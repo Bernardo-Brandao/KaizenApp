@@ -154,6 +154,9 @@ class DatabaseManager {
         // Dia em que a tarefa foi concluída ("yyyy-MM-dd"); vazio se não concluída
         try? db?.execute("ALTER TABLE tarefas ADD COLUMN dataConclusao TEXT DEFAULT ''")
         try? db?.execute("ALTER TABLE tarefas ADD COLUMN nota TEXT DEFAULT ''")
+        // Dias da semana ("2,4,6"); vazio = todos
+        try? db?.execute("ALTER TABLE rotinas ADD COLUMN diasSemana TEXT DEFAULT ''")
+        try? db?.execute("ALTER TABLE tarefas ADD COLUMN diasSemana TEXT DEFAULT ''")
 
         // Limpa tarefas e histórico de rotinas que já foram excluídas
         try? db?.execute("DELETE FROM tarefas WHERE rotinaId NOT IN (SELECT id FROM rotinas)")

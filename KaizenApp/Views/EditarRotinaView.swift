@@ -14,6 +14,7 @@ struct EditarRotinaView: View {
     @State private var categoriaId: Int64?
     @State private var diaLembrete: Int
     @State private var icone: String
+    @State private var diasSemana: Set<Int>
     @State private var mostrarConfirmacao = false
 
     let opcoesFrequencia = ["Diária", "Semanal", "Mensal"]
@@ -28,6 +29,7 @@ struct EditarRotinaView: View {
         _categoriaId = State(initialValue: rotina.categoriaId)
         _diaLembrete = State(initialValue: rotina.diaLembrete)
         _icone = State(initialValue: rotina.icone)
+        _diasSemana = State(initialValue: rotina.diasSemana)
 
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm"
@@ -59,6 +61,21 @@ struct EditarRotinaView: View {
                 .pickerStyle(.inline)
             }
 
+            // Diária: em quais dias a rotina vale (nos outros, folga)
+            if frequencia == "Diária" {
+                Section {
+                    SeletorDiasSemana(dias: $diasSemana)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 4)
+                } header: {
+                    Text("Repetir em")
+                } footer: {
+                    Text(diasSemana.isEmpty
+                         ? "Todo dia."
+                         : "\(DiasSemana.descricao(diasSemana)). Nos outros dias a rotina fica de folga: não conta, não quebra a sequência e não tem lembrete.")
+                }
+            }
+
             LembreteSection(
                 frequencia: frequencia,
                 lembreteAtivo: $lembreteAtivo,
@@ -88,6 +105,7 @@ struct EditarRotinaView: View {
         atualizada.categoriaId = categoriaId
         atualizada.diaLembrete = diaLembrete
         atualizada.icone = icone
+        atualizada.diasSemana = frequencia == "Diária" ? diasSemana : []
 
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm"

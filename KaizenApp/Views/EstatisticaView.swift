@@ -6,7 +6,7 @@ struct EstatisticasView: View {
 
     init(rotina: Rotina) {
         self.rotina = rotina
-        _viewModel = StateObject(wrappedValue: EstatisticasViewModel(rotinaId: rotina.id ?? 0, frequencia: rotina.frequencia))
+        _viewModel = StateObject(wrappedValue: EstatisticasViewModel(rotinaId: rotina.id ?? 0, frequencia: rotina.frequencia, diasSemana: rotina.diasSemana))
     }
 
     @State private var cor: Color = AppTheme.primary
@@ -20,7 +20,7 @@ struct EstatisticasView: View {
                     Text(rotina.iconeExibido).font(.system(size: 40))
                     VStack(alignment: .leading, spacing: 2) {
                         Text(rotina.nome).font(.title2.bold())
-                        Text(rotina.frequencia).font(.subheadline).foregroundStyle(.secondary)
+                        Text(rotina.frequenciaDescrita).font(.subheadline).foregroundStyle(.secondary)
                     }
                 }
                 .padding(.top, 8)

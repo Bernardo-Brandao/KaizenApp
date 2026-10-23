@@ -50,7 +50,7 @@ struct KaizenWidgetView: View {
 
     // Só rotinas com tarefas entram na conta
     private var rotinas: [ResumoRotina] {
-        entrada.rotinas.filter { $0.total > 0 }
+        entrada.rotinas.filter { $0.total > 0 && $0.programadaHoje }
     }
 
     private var completas: Int {

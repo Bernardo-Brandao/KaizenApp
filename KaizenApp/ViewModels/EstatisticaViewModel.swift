@@ -7,10 +7,17 @@ class EstatisticasViewModel: ObservableObject {
     private let dao = HistoricoDAO()
     private let rotinaId: Int64
     let frequencia: String
+    let diasSemana: Set<Int>   // rotina diária com dias escolhidos: os outros dias são folga (neutros)
 
-    init(rotinaId: Int64, frequencia: String) {
+    init(rotinaId: Int64, frequencia: String, diasSemana: Set<Int> = []) {
         self.rotinaId = rotinaId
         self.frequencia = frequencia
+        self.diasSemana = diasSemana
+    }
+
+    // Dia de folga: rotina diária que não vale nesse dia da semana
+    static func ehFolga(_ periodo: String, frequencia: String, diasSemana: Set<Int>) -> Bool {
+        frequencia == "Diária" && !DiasSemana.inclui(diasSemana, dia: periodo)
     }
 
     func carregar() {
@@ -53,12 +60,14 @@ class EstatisticasViewModel: ObservableObject {
     // Período pausado é neutro: conta se foi completado, senão é pulado sem quebrar.
     var streakAtual: Int {
         let completos = Set(porPeriodo.filter { $0.value.completoNoDia }.keys)
-        return Self.calcularStreak(completos: completos, pausados: periodosPausados, frequencia: frequencia)
+        return Self.calcularStreak(completos: completos, pausados: periodosPausados, frequencia: frequencia,
+                                   diasSemana: diasSemana)
     }
 
     // `completos` e `pausados` são inícios de período
     static func calcularStreak(completos: Set<String>, pausados: Set<String>,
-                               frequencia: String, hoje: String = DataUtil.hoje()) -> Int {
+                               frequencia: String, hoje: String = DataUtil.hoje(),
+                               diasSemana: Set<Int> = []) -> Int {
         let atual = DataUtil.periodoAtual(frequencia: frequencia, hoje: hoje)
 
         var periodo: String? = completos.contains(atual) ? atual : DataUtil.periodoAnterior(a: atual, frequencia: frequencia)
@@ -66,7 +75,7 @@ class EstatisticasViewModel: ObservableObject {
         while let p = periodo {
             if completos.contains(p) {
                 streak += 1
-            } else if !pausados.contains(p) {
+            } else if !pausados.contains(p) && !ehFolga(p, frequencia: frequencia, diasSemana: diasSemana) {
                 break
             }
             periodo = DataUtil.periodoAnterior(a: p, frequencia: frequencia)
@@ -77,7 +86,8 @@ class EstatisticasViewModel: ObservableObject {
     // Maior sequência que a rotina já teve (o "recorde"), com a mesma regra do streak
     var recorde: Int {
         let completos = Set(porPeriodo.filter { $0.value.completoNoDia }.keys)
-        return Self.calcularRecorde(completos: completos, pausados: periodosPausados, frequencia: frequencia)
+        return Self.calcularRecorde(completos: completos, pausados: periodosPausados, frequencia: frequencia,
+                                    diasSemana: diasSemana)
     }
 
     var periodosCompletos: Int {
@@ -86,13 +96,15 @@ class EstatisticasViewModel: ObservableObject {
 
     // Percorre os períodos completos do mais antigo pro mais novo: cada um continua a sequência
     // se o período completo anterior vem logo antes dele (pulando períodos pausados).
-    static func calcularRecorde(completos: Set<String>, pausados: Set<String>, frequencia: String) -> Int {
+    static func calcularRecorde(completos: Set<String>, pausados: Set<String>, frequencia: String,
+                                diasSemana: Set<Int> = []) -> Int {
         var melhor = 0
         var atual = 0
         var ultimo: String?
         for periodo in completos.sorted() {
             var anterior = DataUtil.periodoAnterior(a: periodo, frequencia: frequencia)
-            while let a = anterior, pausados.contains(a), !completos.contains(a) {
+            while let a = anterior, !completos.contains(a),
+                  pausados.contains(a) || ehFolga(a, frequencia: frequencia, diasSemana: diasSemana) {
                 anterior = DataUtil.periodoAnterior(a: a, frequencia: frequencia)
             }
             atual = (anterior != nil && anterior == ultimo) ? atual + 1 : 1

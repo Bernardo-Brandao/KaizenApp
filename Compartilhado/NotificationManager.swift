@@ -59,7 +59,8 @@ class NotificationManager {
             hora: hora,
             minuto: minuto,
             aPartirDe: Date(),
-            quantidade: Self.ocorrenciasAgendadas[rotina.frequencia] ?? 7
+            quantidade: Self.ocorrenciasAgendadas[rotina.frequencia] ?? 7,
+            diasSemana: rotina.diasSemana
         ).filter { data in
             !(completaNoPeriodo && Self.estaNoPeriodoAtual(data, frequencia: rotina.frequencia))
         }
@@ -171,6 +172,7 @@ class NotificationManager {
     // Diária: todo dia. Semanal: no dia da semana `diaLembrete` (1 = domingo). Mensal: no dia do mês `diaLembrete`.
     static func proximasDatas(frequencia: String, diaLembrete: Int, hora: Int, minuto: Int,
                               aPartirDe inicio: Date, quantidade: Int,
+                              diasSemana: Set<Int> = [],
                               calendario: Calendar = .current) -> [Date] {
         var datas: [Date] = []
         var dia = calendario.startOfDay(for: inicio)
@@ -181,7 +183,7 @@ class NotificationManager {
             switch frequencia {
             case "Semanal": caiNoDia = componentes.weekday == diaLembrete
             case "Mensal": caiNoDia = componentes.day == diaLembrete
-            default: caiNoDia = true
+            default: caiNoDia = diasSemana.isEmpty || componentes.weekday.map(diasSemana.contains) == true
             }
 
             if caiNoDia,

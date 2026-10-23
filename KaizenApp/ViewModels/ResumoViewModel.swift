@@ -18,7 +18,7 @@ class ResumoViewModel: ObservableObject {
         var historicoDiario: [HistoricoDia] = []
         for rotina in RotinaDAO().listarTodas() where rotina.ativa {
             guard let id = rotina.id else { continue }
-            let estatisticas = EstatisticasViewModel(rotinaId: id, frequencia: rotina.frequencia)
+            let estatisticas = EstatisticasViewModel(rotinaId: id, frequencia: rotina.frequencia, diasSemana: rotina.diasSemana)
             estatisticas.carregar()
             sequencias.append(estatisticas.streakAtual)
             recordes.append(estatisticas.recorde)
@@ -44,7 +44,8 @@ class ResumoViewModel: ObservableObject {
 
     // Fração de tarefas feitas nas rotinas de uma frequência (nil = nenhuma rotina dessa frequência)
     static func progresso(_ rotinas: [ResumoRotina], frequencia: String, agora: Date = .now) -> (feitas: Int, total: Int)? {
-        let daFrequencia = rotinas.filter { $0.frequencia == frequencia && $0.total > 0 }
+        // Rotinas de folga hoje ficam fora dos anéis
+        let daFrequencia = rotinas.filter { $0.frequencia == frequencia && $0.total > 0 && $0.programadaHoje }
         guard !daFrequencia.isEmpty else { return nil }
         return (daFrequencia.reduce(0) { $0 + $1.concluidas(em: agora) }, daFrequencia.reduce(0) { $0 + $1.total })
     }

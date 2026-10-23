@@ -2,11 +2,19 @@ import Foundation
 import Combine
 
 class TarefaViewModel: ObservableObject {
-    @Published var tarefas: [Tarefa] = []
+    @Published var tarefas: [Tarefa] = []          // as de hoje (em rotinas diárias, algumas valem só em certos dias)
+    @Published var todasTarefas: [Tarefa] = []     // todas, pra organizar e pra seção "Em outros dias"
     private let dao = TarefaDAO()
     private let historicoDao = HistoricoDAO()
     private let rotinaId: Int64
     var frequencia: String   // define o período do reset: dia, semana ou mês
+    var programadaHoje = true // rotina diária com dias escolhidos: false nos dias de folga
+
+    // Tarefas que não aparecem hoje (só em outros dias da semana)
+    var tarefasDeOutrosDias: [Tarefa] {
+        let deHoje = Set(tarefas.compactMap(\.id))
+        return todasTarefas.filter { !deHoje.contains($0.id ?? -1) }
+    }
 
     init(rotinaId: Int64, frequencia: String) {
         self.rotinaId = rotinaId
@@ -15,13 +23,15 @@ class TarefaViewModel: ObservableObject {
 
     func carregar() {
         tarefas = dao.listarPorRotina(rotinaId, frequencia: frequencia)
+        todasTarefas = dao.listarPorRotina(rotinaId, frequencia: frequencia, dia: nil)
         registrarProgressoAtual()
     }
 
-    func adicionar(nome: String, nota: String = "") {
-        let novaOrdem = tarefas.count
+    func adicionar(nome: String, nota: String = "", dias: Set<Int> = []) {
+        let novaOrdem = todasTarefas.count
         let nova = Tarefa(id: nil, rotinaId: rotinaId, nome: nome, ordem: novaOrdem, concluidaHoje: false,
-                          nota: nota.trimmingCharacters(in: .whitespacesAndNewlines))
+                          nota: nota.trimmingCharacters(in: .whitespacesAndNewlines),
+                          diasSemana: DiasSemana.normalizar(dias))
         dao.inserir(nova)
         carregar()
         atualizarLembrete()
@@ -43,15 +53,17 @@ class TarefaViewModel: ObservableObject {
         !tarefas.isEmpty && tarefas.allSatisfy { $0.concluidaHoje }
     }
 
-    func editar(_ tarefa: Tarefa, nome: String, nota: String) {
+    func editar(_ tarefa: Tarefa, nome: String, nota: String, dias: Set<Int>) {
         let nomeLimpo = nome.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !nomeLimpo.isEmpty else { return }
-        dao.editar(tarefa, nome: nomeLimpo, nota: nota.trimmingCharacters(in: .whitespacesAndNewlines))
+        dao.editar(tarefa, nome: nomeLimpo, nota: nota.trimmingCharacters(in: .whitespacesAndNewlines),
+                   dias: DiasSemana.normalizar(dias))
         carregar()
+        atualizarLembrete()   // mudar os dias pode mudar se a rotina está completa hoje
     }
 
     func mover(de origem: IndexSet, para destino: Int) {
-        dao.salvarOrdem(Self.reordenar(tarefas, de: origem, para: destino))
+        dao.salvarOrdem(Self.reordenar(todasTarefas, de: origem, para: destino))
         carregar()
     }
 
@@ -80,7 +92,9 @@ class TarefaViewModel: ObservableObject {
     }
 
     // Sempre que a lista de tarefas muda, atualiza o histórico do período atual
+    // Em dia de folga da rotina não registra (o dia não conta pra sequência nem pra média)
     private func registrarProgressoAtual() {
+        guard programadaHoje else { return }
         let total = tarefas.count
         let concluidas = tarefas.filter { $0.concluidaHoje }.count
         historicoDao.registrarProgresso(rotinaId: rotinaId, frequencia: frequencia, total: total, concluidas: concluidas)

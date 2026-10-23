@@ -21,10 +21,12 @@ struct Backup: Codable {
         var id: Int64, nome: String, descricao: String, frequencia: String, ativa: Bool
         var horarioLembrete: String, lembreteAtivo: Bool, categoriaId: Int64?, diaLembrete: Int
         var icone: String? = nil   // opcional: backups de antes do emoji não têm essa chave
+        var diasSemana: String? = nil   // opcional: backups de antes dos dias específicos
     }
     struct TarefaBackup: Codable, Equatable {
         var id: Int64, rotinaId: Int64, nome: String, ordem: Int, dataConclusao: String
         var nota: String? = nil   // opcional: backups de antes das notas não têm essa chave
+        var diasSemana: String? = nil
     }
     struct HistoricoBackup: Codable, Equatable {
         var id: Int64, rotinaId: Int64, data: String, totalTarefas: Int, tarefasConcluidas: Int
@@ -75,6 +77,7 @@ enum BackupService {
     private static let inicio = Expression<String>("inicio")
     private static let fim = Expression<String>("fim")
     private static let nota = Expression<String>("nota")
+    private static let diasSemana = Expression<String>("diasSemana")
 
     // MARK: - Exportar
 
@@ -89,11 +92,12 @@ enum BackupService {
             rotinas: try db.prepare(rotinas).map {
                 .init(id: $0[id], nome: $0[nome], descricao: $0[descricao], frequencia: $0[frequencia],
                       ativa: $0[ativa], horarioLembrete: $0[horarioLembrete], lembreteAtivo: $0[lembreteAtivo],
-                      categoriaId: $0[categoriaId], diaLembrete: $0[diaLembrete], icone: $0[icone])
+                      categoriaId: $0[categoriaId], diaLembrete: $0[diaLembrete], icone: $0[icone],
+                      diasSemana: $0[diasSemana])
             },
             tarefas: try db.prepare(tarefas).map {
                 .init(id: $0[id], rotinaId: $0[rotinaId], nome: $0[nome], ordem: $0[ordem], dataConclusao: $0[dataConclusao],
-                      nota: $0[nota])
+                      nota: $0[nota], diasSemana: $0[diasSemana])
             },
             historico: try db.prepare(historico).map {
                 .init(id: $0[id], rotinaId: $0[rotinaId], data: $0[data],
@@ -140,14 +144,14 @@ enum BackupService {
                     id <- r.id, nome <- r.nome, descricao <- r.descricao, frequencia <- r.frequencia,
                     ativa <- r.ativa, horarioLembrete <- r.horarioLembrete, lembreteAtivo <- r.lembreteAtivo,
                     categoriaId <- r.categoriaId, diaLembrete <- r.diaLembrete,
-                    icone <- (r.icone ?? "")
+                    icone <- (r.icone ?? ""), diasSemana <- (r.diasSemana ?? "")
                 ))
             }
             for t in backup.tarefas {
                 try db.run(tarefas.insert(
                     id <- t.id, rotinaId <- t.rotinaId, nome <- t.nome, ordem <- t.ordem,
                     concluidaHoje <- !t.dataConclusao.isEmpty, dataConclusao <- t.dataConclusao,
-                    nota <- (t.nota ?? "")
+                    nota <- (t.nota ?? ""), diasSemana <- (t.diasSemana ?? "")
                 ))
             }
             for h in backup.historico {

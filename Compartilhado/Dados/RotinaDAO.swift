@@ -15,6 +15,7 @@ class RotinaDAO {
     let categoriaId = Expression<Int64?>("categoriaId")
     let diaLembrete = Expression<Int>("diaLembrete")
     let icone = Expression<String>("icone")
+    let diasSemana = Expression<String>("diasSemana")
 
     // CREATE — agora retorna o id gerado, pra podermos agendar a notificação certa
     @discardableResult
@@ -28,7 +29,8 @@ class RotinaDAO {
             lembreteAtivo <- rotina.lembreteAtivo,
             categoriaId <- rotina.categoriaId,
             diaLembrete <- rotina.diaLembrete,
-            icone <- rotina.icone
+            icone <- rotina.icone,
+            diasSemana <- DiasSemana.codificar(rotina.diasSemana)
         )
         return try? db?.run(insert)
     }
@@ -48,7 +50,8 @@ class RotinaDAO {
                     lembreteAtivo: row[lembreteAtivo],
                     categoriaId: row[categoriaId],
                     diaLembrete: row[diaLembrete],
-                    icone: row[icone]
+                    icone: row[icone],
+                    diasSemana: DiasSemana.decodificar(row[diasSemana])
                 ))
             }
         }
@@ -67,7 +70,8 @@ class RotinaDAO {
             lembreteAtivo: row[lembreteAtivo],
             categoriaId: row[categoriaId],
             diaLembrete: row[diaLembrete],
-            icone: row[icone]
+            icone: row[icone],
+            diasSemana: DiasSemana.decodificar(row[diasSemana])
         )
     }
 
@@ -84,7 +88,8 @@ class RotinaDAO {
             lembreteAtivo <- rotina.lembreteAtivo,
             categoriaId <- rotina.categoriaId,
             diaLembrete <- rotina.diaLembrete,
-            icone <- rotina.icone
+            icone <- rotina.icone,
+            diasSemana <- DiasSemana.codificar(rotina.diasSemana)
         ))
     }
 

@@ -10,11 +10,10 @@ struct DetalheRotinaView: View {
     @StateObject private var viewModel: TarefaViewModel
     @State private var novaTarefaNome = ""
     @State private var novaTarefaNota = ""
+    @State private var novaTarefaDias: Set<Int> = []
     @State private var mostrarCampoNovaTarefa = false
     @FocusState private var focoNovaTarefa: Bool
     @State private var tarefaParaEditar: Tarefa?
-    @State private var nomeEditado = ""
-    @State private var notaEditada = ""
     @State private var mostrarOrganizar = false
     @State private var mostrarEdicao = false
     @State private var mostrarEstatisticas = false
@@ -45,6 +44,8 @@ struct DetalheRotinaView: View {
                     propriedades
                     if !rotina.ativa {
                         avisoPausada
+                    } else if !viewModel.programadaHoje {
+                        avisoFolga
                     }
                     Divider()
                     checklist
@@ -73,7 +74,7 @@ struct DetalheRotinaView: View {
                     Button { mostrarEdicao = true } label: {
                         Label("Editar rotina", systemImage: "pencil")
                     }
-                    if viewModel.tarefas.count > 1 {
+                    if viewModel.todasTarefas.count > 1 {
                         Button { mostrarOrganizar = true } label: {
                             Label("Organizar tarefas", systemImage: "arrow.up.arrow.down")
                         }
@@ -96,18 +97,11 @@ struct DetalheRotinaView: View {
         .navigationDestination(isPresented: $mostrarEdicao) {
             EditarRotinaView(viewModel: RotinaViewModel(), rotina: rotina)
         }
-        .alert("Editar tarefa", isPresented: Binding(
-            get: { tarefaParaEditar != nil },
-            set: { if !$0 { tarefaParaEditar = nil } }
-        )) {
-            TextField("Nome da tarefa", text: $nomeEditado)
-            TextField("Nota (opcional)", text: $notaEditada)
-            Button("Salvar") {
-                if let tarefa = tarefaParaEditar {
-                    viewModel.editar(tarefa, nome: nomeEditado, nota: notaEditada)
-                }
+        .sheet(item: $tarefaParaEditar) { tarefa in
+            EditarTarefaView(tarefa: tarefa, mostrarDias: rotina.frequencia == "Diária", cor: cor) { nome, nota, dias in
+                viewModel.editar(tarefa, nome: nome, nota: nota, dias: dias)
             }
-            Button("Cancelar", role: .cancel) {}
+            .presentationDetents([.medium])
         }
         .sheet(isPresented: $mostrarOrganizar) {
             OrganizarTarefasView(viewModel: viewModel)
@@ -153,7 +147,7 @@ struct DetalheRotinaView: View {
     private var propriedades: some View {
         VStack(alignment: .leading, spacing: 10) {
             propriedade("Frequência", icone: "repeat") {
-                Text(rotina.frequencia)
+                Text(rotina.frequenciaDescrita)
             }
             propriedade("Categoria", icone: "tag") {
                 if let categoria {
@@ -214,28 +208,62 @@ struct DetalheRotinaView: View {
     private var checklist: some View {
         VStack(alignment: .leading, spacing: 2) {
             ForEach(viewModel.tarefas) { tarefa in
-                LinhaTarefa(tarefa: tarefa, cor: cor) {
+                LinhaTarefa(tarefa: tarefa, cor: cor, mostrarDias: rotina.frequencia == "Diária") {
                     toquesEmTarefas += 1
                     if viewModel.alternarConcluida(tarefa) {
                         comemorar()
                     }
                 }
-                .contextMenu {
-                    Button {
-                        nomeEditado = tarefa.nome
-                        notaEditada = tarefa.nota
-                        tarefaParaEditar = tarefa
-                    } label: {
-                        Label("Editar", systemImage: "pencil")
-                    }
-                    Button(role: .destructive) {
-                        viewModel.excluir(tarefa)
-                    } label: {
-                        Label("Excluir tarefa", systemImage: "trash")
-                    }
-                }
+                .contextMenu { menuDaTarefa(tarefa) }
             }
             novaTarefa
+            outrosDias
+        }
+    }
+
+    @ViewBuilder
+    private func menuDaTarefa(_ tarefa: Tarefa) -> some View {
+        Button {
+            tarefaParaEditar = tarefa
+        } label: {
+            Label("Editar", systemImage: "pencil")
+        }
+        Button(role: .destructive) {
+            viewModel.excluir(tarefa)
+        } label: {
+            Label("Excluir tarefa", systemImage: "trash")
+        }
+    }
+
+    // Tarefas que valem só em outros dias da semana (não aparecem na checklist de hoje)
+    @ViewBuilder
+    private var outrosDias: some View {
+        let outras = viewModel.tarefasDeOutrosDias
+        if !outras.isEmpty {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Em outros dias")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(.top, 16)
+                ForEach(outras) { tarefa in
+                    HStack(alignment: .firstTextBaseline, spacing: 12) {
+                        Image(systemName: "calendar")
+                            .font(.subheadline)
+                            .foregroundStyle(.tertiary)
+                            .frame(width: 22)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(tarefa.nome).foregroundStyle(.secondary)
+                            Text(DiasSemana.descricao(tarefa.diasSemana))
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.vertical, 6)
+                    .contentShape(Rectangle())
+                    .contextMenu { menuDaTarefa(tarefa) }
+                }
+            }
         }
     }
 
@@ -256,12 +284,20 @@ struct DetalheRotinaView: View {
                 TextField("Nota (opcional), ex.: 30 min", text: $novaTarefaNota)
                     .font(.subheadline)
                     .padding(.leading, 36)
+                if rotina.frequencia == "Diária" {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Dias da tarefa").font(.caption).foregroundStyle(.secondary)
+                        SeletorDiasSemana(dias: $novaTarefaDias, cor: cor)
+                    }
+                    .padding(.leading, 36)
+                }
                 HStack {
                     Spacer()
                     Button("Cancelar") {
                         mostrarCampoNovaTarefa = false
                         novaTarefaNome = ""
                         novaTarefaNota = ""
+                        novaTarefaDias = []
                     }
                     Button("Adicionar", action: adicionarTarefa)
                         .buttonStyle(.borderedProminent)
@@ -289,9 +325,10 @@ struct DetalheRotinaView: View {
     private func adicionarTarefa() {
         let nome = novaTarefaNome.trimmingCharacters(in: .whitespaces)
         guard !nome.isEmpty else { return }
-        viewModel.adicionar(nome: nome, nota: novaTarefaNota)
+        viewModel.adicionar(nome: nome, nota: novaTarefaNota, dias: novaTarefaDias)
         novaTarefaNome = ""
         novaTarefaNota = ""
+        // Os dias ficam: ajuda a adicionar várias tarefas da sexta em sequência
         // Continua no campo, pra adicionar várias seguidas como numa lista do Notion
         focoNovaTarefa = true
         recarregarSequencia()
@@ -313,6 +350,25 @@ struct DetalheRotinaView: View {
     private func alternarPausa() {
         RotinaViewModel().alternarPausa(rotina)
         recarregarRotina()
+    }
+
+    // Aviso de dia de folga de uma rotina com dias escolhidos
+    private var avisoFolga: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "moon.zzz.fill")
+                .font(.title2)
+                .foregroundStyle(.indigo)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Hoje é folga")
+                    .font(.subheadline.bold())
+                Text("Esta rotina só vale em: \(DiasSemana.descricao(rotina.diasSemana)). Hoje ela não conta e não quebra a sequência.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(14)
+        .background(RoundedRectangle(cornerRadius: 14).fill(Color.indigo.opacity(0.12)))
     }
 
     // Aviso de rotina pausada, com botão pra retomar
@@ -344,13 +400,14 @@ struct DetalheRotinaView: View {
             rotina = salva
         }
         viewModel.frequencia = rotina.frequencia
+        viewModel.programadaHoje = rotina.programada(em: DataUtil.hoje())
         categoria = CategoriaDAO().listarTodas().first { $0.id == rotina.categoriaId }
         recarregarSequencia()
     }
 
     private func recarregarSequencia() {
         guard let id = rotina.id else { return }
-        let estatisticas = EstatisticasViewModel(rotinaId: id, frequencia: rotina.frequencia)
+        let estatisticas = EstatisticasViewModel(rotinaId: id, frequencia: rotina.frequencia, diasSemana: rotina.diasSemana)
         estatisticas.carregar()
         sequencia = estatisticas.streakAtual
         recorde = estatisticas.recorde
@@ -362,6 +419,7 @@ struct DetalheRotinaView: View {
 struct LinhaTarefa: View {
     let tarefa: Tarefa
     let cor: Color
+    var mostrarDias = false
     let aoTocar: () -> Void
 
     var body: some View {
@@ -384,6 +442,15 @@ struct LinhaTarefa: View {
                     }
                 }
                 Spacer(minLength: 0)
+                // Tarefa só de alguns dias: etiqueta com os dias
+                if mostrarDias && !tarefa.diasSemana.isEmpty {
+                    Text(DiasSemana.descricao(tarefa.diasSemana))
+                        .font(.caption2.weight(.medium))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(cor.opacity(0.15), in: Capsule())
+                        .foregroundStyle(cor)
+                }
             }
             .padding(.vertical, 8)
             .contentShape(Rectangle())
@@ -401,7 +468,7 @@ struct OrganizarTarefasView: View {
     var body: some View {
         NavigationStack {
             List {
-                ForEach(viewModel.tarefas) { tarefa in
+                ForEach(viewModel.todasTarefas) { tarefa in
                     VStack(alignment: .leading, spacing: 2) {
                         Text(tarefa.nome)
                         if !tarefa.nota.isEmpty {
@@ -415,7 +482,7 @@ struct OrganizarTarefasView: View {
                     viewModel.mover(de: origem, para: destino)
                 }
                 .onDelete { indices in
-                    indices.map { viewModel.tarefas[$0] }.forEach(viewModel.excluir)
+                    indices.map { viewModel.todasTarefas[$0] }.forEach(viewModel.excluir)
                 }
             }
             .environment(\.editMode, .constant(.active))

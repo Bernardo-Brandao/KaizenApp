@@ -45,10 +45,14 @@ struct ListaRotinasView: View {
                 IconeRotina(icone: rotina.iconeExibido)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(rotina.nome).font(.body.weight(.medium))
-                    Text(rotina.frequencia).font(.caption).foregroundStyle(.secondary)
+                    Text(rotina.frequenciaDescrita).font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
-                if !rotina.ativa {
+                if rotina.ativa && !rotina.programada(em: DataUtil.hoje()) {
+                    Label("Folga hoje", systemImage: "moon.zzz")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                } else if !rotina.ativa {
                     Label("Pausada", systemImage: "pause.circle")
                         .font(.caption)
                         .foregroundColor(.secondary)

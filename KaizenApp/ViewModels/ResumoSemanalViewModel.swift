@@ -7,6 +7,7 @@ struct DadosRotinaSemana {
     let icone: String
     let frequencia: String
     let historico: [HistoricoDia]
+    var diasSemana: Set<Int> = []   // diária com dias escolhidos: os outros são folga
 }
 
 // Como foi uma semana (domingo a sábado). Rotinas mensais ficam de fora.
@@ -15,7 +16,7 @@ struct ResumoSemanal {
         let nome: String
         let icone: String
         let frequencia: String
-        let dias: [Bool]        // diária: 7 posições (domingo…sábado), true = completa no dia
+        let dias: [Bool?]       // diária: 7 posições (domingo…sábado); true = completa, nil = folga
         let semanaCompleta: Bool // semanal: a semana foi completada
         var id: String { nome }
     }
@@ -88,16 +89,19 @@ struct ResumoSemanal {
             switch rotina.frequencia {
             case "Diária":
                 let porDia = Dictionary(rotina.historico.map { ($0.data, $0) }, uniquingKeysWith: { a, _ in a })
-                let feitos = dias.map { porDia[$0]?.completoNoDia ?? false }
-                for dia in dias {
+                let programados = dias.filter { DiasSemana.inclui(rotina.diasSemana, dia: $0) }
+                let feitos: [Bool?] = dias.map { dia in
+                    DiasSemana.inclui(rotina.diasSemana, dia: dia) ? (porDia[dia]?.completoNoDia ?? false) : nil
+                }
+                for dia in programados {
                     if let registro = porDia[dia] {
                         tarefasFeitas += registro.tarefasConcluidas
                         percentuaisPorDia[dia, default: []].append(registro.percentual)
                         if registro.completoNoDia { completasPorDia[dia, default: 0] += 1 }
                     }
                 }
-                completos += feitos.filter { $0 }.count
-                possiveis += dias.count
+                completos += feitos.filter { $0 == true }.count
+                possiveis += programados.count
                 linhas.append(Linha(nome: rotina.nome, icone: rotina.icone, frequencia: rotina.frequencia,
                                     dias: feitos, semanaCompleta: false))
             case "Semanal":
@@ -116,7 +120,11 @@ struct ResumoSemanal {
             }
         }
 
-        let diasPerfeitos = diarias.isEmpty ? 0 : dias.filter { (completasPorDia[$0] ?? 0) == diarias.count }.count
+        // Dia perfeito: todas as diárias programadas pro dia foram completadas (e havia alguma)
+        let diasPerfeitos = dias.filter { dia in
+            let programadas = diarias.filter { DiasSemana.inclui($0.diasSemana, dia: dia) }.count
+            return programadas > 0 && (completasPorDia[dia] ?? 0) == programadas
+        }.count
         let melhorDia = dias
             .compactMap { dia -> (String, Double)? in
                 guard let valores = percentuaisPorDia[dia], !valores.isEmpty else { return nil }
@@ -144,7 +152,8 @@ class ResumoSemanalViewModel: ObservableObject {
         let rotinas = RotinaDAO().listarTodas().compactMap { rotina -> DadosRotinaSemana? in
             guard rotina.ativa, let id = rotina.id else { return nil }
             return DadosRotinaSemana(nome: rotina.nome, icone: rotina.iconeExibido,
-                                     frequencia: rotina.frequencia, historico: historicoDao.listarPorRotina(id))
+                                     frequencia: rotina.frequencia, historico: historicoDao.listarPorRotina(id),
+                                     diasSemana: rotina.diasSemana)
         }
         resumo = ResumoSemanal.calcular(rotinas: rotinas, inicioSemana: Self.semanaPassada())
     }
