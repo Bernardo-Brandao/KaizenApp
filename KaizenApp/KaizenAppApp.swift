@@ -8,6 +8,7 @@ struct KaizenAppApp: App {
     enum Aba { case rotinas, categorias, ajustes }
 
     init() {
+        NotificacaoDelegate.shared.registrar()
         NotificationManager.shared.solicitarPermissao()
         NotificationManager.shared.reagendarTodos()
     }
