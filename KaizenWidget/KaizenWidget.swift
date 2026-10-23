@@ -27,11 +27,19 @@ struct ProvedorKaizen: TimelineProvider {
         completion(Timeline(entries: entradas, policy: .atEnd))
     }
 
+    // Dados de exemplo pra galeria de widgets, quando ainda não há rotinas
     static let exemplo = [
-        ResumoRotina(id: 1, nome: "Manhã", concluidas: 3, total: 3, corHex: nil, validoAte: .distantFuture),
-        ResumoRotina(id: 2, nome: "Estudos", concluidas: 1, total: 4, corHex: "AF52DE", validoAte: .distantFuture),
-        ResumoRotina(id: 3, nome: "Academia", concluidas: 0, total: 2, corHex: "34C759", validoAte: .distantFuture),
+        exemplo(1, "Manhã", feitas: 3, de: ["Água", "Alongar", "Meditar"], cor: nil),
+        exemplo(2, "Estudos", feitas: 1, de: ["Ler 20 páginas", "Revisar", "Exercícios", "Resumo"], cor: "AF52DE"),
+        exemplo(3, "Academia", feitas: 0, de: ["Treino", "Proteína"], cor: "34C759"),
     ]
+
+    private static func exemplo(_ id: Int64, _ nome: String, feitas: Int, de nomes: [String], cor: String?) -> ResumoRotina {
+        let tarefas = nomes.enumerated().map { indice, nomeTarefa in
+            ResumoTarefa(id: Int64(id * 100 + Int64(indice)), nome: nomeTarefa, concluida: indice < feitas)
+        }
+        return ResumoRotina(id: id, nome: nome, tarefas: tarefas, corHex: cor, validoAte: .distantFuture)
+    }
 }
 
 // MARK: - Views
@@ -79,7 +87,7 @@ struct KaizenWidgetView: View {
                 VStack(spacing: 6) {
                     Image(systemName: "checklist")
                         .font(.title2)
-                        .foregroundStyle(Cores.primaria)
+                        .foregroundStyle(CoresWidget.primaria)
                     Text("Crie uma rotina no Kaizen")
                         .font(.caption)
                         .multilineTextAlignment(.center)
@@ -141,11 +149,11 @@ struct KaizenWidgetView: View {
     private var resumoGeral: some View {
         VStack(spacing: 8) {
             ZStack {
-                Anel(progresso: Double(completas) / Double(rotinas.count), cor: Cores.primaria, espessura: 8)
+                Anel(progresso: Double(completas) / Double(rotinas.count), cor: CoresWidget.primaria, espessura: 8)
                 if completas == rotinas.count {
                     Image(systemName: "checkmark")
                         .font(.title3.bold())
-                        .foregroundStyle(Cores.primaria)
+                        .foregroundStyle(CoresWidget.primaria)
                 } else {
                     Text("\(completas)/\(rotinas.count)")
                         .font(.title3.bold().monospacedDigit())
@@ -162,7 +170,7 @@ struct KaizenWidgetView: View {
         VStack(alignment: .leading, spacing: 6) {
             ForEach(rotinas.prefix(4)) { rotina in
                 let concluidas = rotina.concluidas(em: entrada.date)
-                let cor = rotina.corHex.map(Cores.hex) ?? Cores.primaria
+                let cor = rotina.corHex.map(CoresWidget.hex) ?? CoresWidget.primaria
                 Link(destination: LinkKaizen.rotina(rotina.id)) {
                 HStack(spacing: 8) {
                     Anel(progresso: Double(concluidas) / Double(rotina.total), cor: cor, espessura: 3)
@@ -204,13 +212,13 @@ private struct Anel: View {
 }
 
 // Links que o app trata em KaizenAppApp.onOpenURL
-private enum LinkKaizen {
+enum LinkKaizen {
     static let lista = URL(string: "kaizen://rotinas")!
     static func rotina(_ id: Int64) -> URL { URL(string: "kaizen://rotina/\(id)")! }
 }
 
 // O widget não enxerga o AppTheme do app; a cor principal é a mesma (3DA9FC)
-private enum Cores {
+enum CoresWidget {
     static let primaria = hex("3DA9FC")
 
     static func hex(_ valor: String) -> Color {
@@ -227,6 +235,13 @@ private enum Cores {
 // MARK: - Widget
 
 @main
+struct KaizenWidgets: WidgetBundle {
+    var body: some Widget {
+        KaizenWidget()
+        TarefasWidget()
+    }
+}
+
 struct KaizenWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: "KaizenWidget", provider: ProvedorKaizen()) { entrada in

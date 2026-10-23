@@ -1,18 +1,19 @@
 import Foundation
 
-// Resumo das rotinas que o app grava no App Group e o widget lê.
-// Este arquivo é compilado nos dois targets (KaizenApp e KaizenWidget).
-struct ResumoRotina: Codable, Identifiable {
+// O que o widget mostra de cada rotina. Montado direto do banco (que fica no App Group),
+// então o widget sempre vê o mesmo que o app.
+struct ResumoRotina: Identifiable {
     let id: Int64
     let nome: String
-    let concluidas: Int
-    let total: Int
+    let tarefas: [ResumoTarefa]
     let corHex: String?      // cor da categoria, se tiver
     let validoAte: Date      // início do próximo período — dali em diante o progresso zera
 
-    // Progresso considerando que o período pode ter virado desde que o app gravou
+    var total: Int { tarefas.count }
+
+    // Progresso considerando que o período pode virar entre uma atualização do widget e outra
     func concluidas(em agora: Date) -> Int {
-        agora >= validoAte ? 0 : concluidas
+        agora >= validoAte ? 0 : tarefas.filter(\.concluida).count
     }
 
     func completa(em agora: Date) -> Bool {
@@ -20,19 +21,32 @@ struct ResumoRotina: Codable, Identifiable {
     }
 }
 
+struct ResumoTarefa: Identifiable {
+    let id: Int64
+    let nome: String
+    let concluida: Bool
+}
+
 enum ResumoWidget {
-    static let appGroup = "group.com.bernardobrandao.projeto.KaizenApp"
-    private static let chave = "resumoRotinas"
-
-    static func salvar(_ resumos: [ResumoRotina]) {
-        guard let dados = try? JSONEncoder().encode(resumos) else { return }
-        UserDefaults(suiteName: appGroup)?.set(dados, forKey: chave)
-    }
-
+    // Rotinas ativas, na mesma ordem da lista do app
     static func carregar() -> [ResumoRotina] {
-        guard let dados = UserDefaults(suiteName: appGroup)?.data(forKey: chave),
-              let resumos = try? JSONDecoder().decode([ResumoRotina].self, from: dados)
-        else { return [] }
-        return resumos
+        let categorias = CategoriaDAO().listarTodas()
+        let tarefaDao = TarefaDAO()
+
+        return RotinaDAO().listarTodas().compactMap { rotina in
+            guard rotina.ativa, let id = rotina.id,
+                  let validoAte = DataUtil.inicioProximoPeriodo(frequencia: rotina.frequencia)
+            else { return nil }
+            let tarefas = tarefaDao.listarPorRotina(id, frequencia: rotina.frequencia).compactMap { tarefa in
+                tarefa.id.map { ResumoTarefa(id: $0, nome: tarefa.nome, concluida: tarefa.concluidaHoje) }
+            }
+            return ResumoRotina(
+                id: id,
+                nome: rotina.nome,
+                tarefas: tarefas,
+                corHex: categorias.first { $0.id == rotina.categoriaId }?.corHex,
+                validoAte: validoAte
+            )
+        }
     }
 }
