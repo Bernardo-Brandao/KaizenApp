@@ -59,6 +59,17 @@ struct KaizenWidgetView: View {
             }
         }
         .containerBackground(.fill.tertiary, for: .widget)
+        .widgetURL(urlDoToque)
+    }
+
+    // Toque no widget: o retangular abre a rotina pendente; os outros abrem a lista.
+    // No médio, cada linha tem o próprio Link e abre a rotina dela.
+    private var urlDoToque: URL {
+        if familia == .accessoryRectangular,
+           let pendente = rotinas.first(where: { !$0.completa(em: entrada.date) }) {
+            return LinkKaizen.rotina(pendente.id)
+        }
+        return LinkKaizen.lista
     }
 
     @ViewBuilder
@@ -152,6 +163,7 @@ struct KaizenWidgetView: View {
             ForEach(rotinas.prefix(4)) { rotina in
                 let concluidas = rotina.concluidas(em: entrada.date)
                 let cor = rotina.corHex.map(Cores.hex) ?? Cores.primaria
+                Link(destination: LinkKaizen.rotina(rotina.id)) {
                 HStack(spacing: 8) {
                     Anel(progresso: Double(concluidas) / Double(rotina.total), cor: cor, espessura: 3)
                         .frame(width: 18, height: 18)
@@ -162,6 +174,7 @@ struct KaizenWidgetView: View {
                     Text("\(concluidas)/\(rotina.total)")
                         .font(.caption.monospacedDigit())
                         .foregroundStyle(.secondary)
+                }
                 }
             }
             if rotinas.count > 4 {
@@ -188,6 +201,12 @@ private struct Anel: View {
                 .rotationEffect(.degrees(-90))
         }
     }
+}
+
+// Links que o app trata em KaizenAppApp.onOpenURL
+private enum LinkKaizen {
+    static let lista = URL(string: "kaizen://rotinas")!
+    static func rotina(_ id: Int64) -> URL { URL(string: "kaizen://rotina/\(id)")! }
 }
 
 // O widget não enxerga o AppTheme do app; a cor principal é a mesma (3DA9FC)

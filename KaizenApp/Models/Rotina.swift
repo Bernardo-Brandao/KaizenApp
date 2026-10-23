@@ -1,6 +1,6 @@
 import Foundation
 
-struct Rotina: Identifiable {
+struct Rotina: Identifiable, Hashable {
     var id: Int64?
     var nome: String
     var descricao: String
