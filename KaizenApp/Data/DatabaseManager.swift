@@ -11,14 +11,25 @@ class DatabaseManager {
                 .appendingPathComponent("kaizen.sqlite3").path
             db = try Connection(path)
             print("Banco criado em: \(path)")
-            criarTabelas()
-            migrarTabelas()
+            Self.prepararEsquema(db)
         } catch {
             print("Erro ao conectar no banco: \(error)")
         }
     }
 
-    private func criarTabelas() {
+    // Banco temporário em memória, com o mesmo esquema — usado nos testes
+    static func bancoEmMemoria() -> Connection? {
+        let db = try? Connection(.inMemory)
+        prepararEsquema(db)
+        return db
+    }
+
+    private static func prepararEsquema(_ db: Connection?) {
+        criarTabelas(db)
+        migrarTabelas(db)
+    }
+
+    private static func criarTabelas(_ db: Connection?) {
         let rotinas = Table("rotinas")
         let tarefas = Table("tarefas")
         let categorias = Table("categorias")
@@ -95,7 +106,7 @@ class DatabaseManager {
         try? db?.run(historico.createIndex(rotinaId, data, unique: true, ifNotExists: true))
     }
 
-    private func migrarTabelas() {
+    private static func migrarTabelas(_ db: Connection?) {
         try? db?.execute("ALTER TABLE rotinas ADD COLUMN horarioLembrete TEXT DEFAULT ''")
         try? db?.execute("ALTER TABLE rotinas ADD COLUMN lembreteAtivo INTEGER DEFAULT 0")
         try? db?.execute("ALTER TABLE rotinas ADD COLUMN categoriaId INTEGER")
