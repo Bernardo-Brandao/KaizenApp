@@ -15,6 +15,12 @@ final class NotificacaoDelegate: NSObject, UNUserNotificationCenterDelegate {
 
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
                                             didReceive response: UNNotificationResponse) async {
+        if response.notification.request.content.userInfo["tipo"] as? String == "semana" {
+            await MainActor.run {
+                if let url = URL(string: "kaizen://semana") { UIApplication.shared.open(url) }
+            }
+            return
+        }
         guard let numero = response.notification.request.content.userInfo["rotinaId"] as? NSNumber else { return }
         let rotinaId = numero.int64Value
         let acao = response.actionIdentifier

@@ -5,6 +5,7 @@ import SwiftUI
 struct ResumoView: View {
     @StateObject private var viewModel = ResumoViewModel()
     @Binding var abaSelecionada: KaizenAppApp.Aba
+    @Binding var mostrarSemana: Bool                 // também aberto pela notificação de domingo
     @Environment(\.scenePhase) private var scenePhase
     @State private var mostrarModelos = false
     @StateObject private var rotinaViewModel = RotinaViewModel()
@@ -18,6 +19,7 @@ struct ResumoView: View {
                     semana
                     rotinasDoPeriodo
                     cartoes
+                    cartaoSemana
                 }
                 .padding(.horizontal)
                 .padding(.bottom, 24)
@@ -27,6 +29,9 @@ struct ResumoView: View {
                 if let rotina = RotinaDAO().buscar(id: id) {
                     DetalheRotinaView(rotina: rotina)
                 }
+            }
+            .navigationDestination(isPresented: $mostrarSemana) {
+                ResumoSemanalView()
             }
             .navigationDestination(isPresented: $mostrarModelos) {
                 ModelosView(viewModel: rotinaViewModel) { _ in
@@ -196,6 +201,30 @@ struct ResumoView: View {
             }
             .buttonStyle(.plain)
         }
+    }
+
+    private var cartaoSemana: some View {
+        Button { mostrarSemana = true } label: {
+            HStack(spacing: 14) {
+                Image(systemName: "calendar")
+                    .font(.title2)
+                    .foregroundStyle(CoresAneis.semana)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Sua semana").font(.headline)
+                    Text("Veja como foi a semana passada")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(16)
+            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: Estilo.cantoCartao))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     private func cartao(titulo: String, icone: String, cor: Color, valor: String, unidade: String) -> some View {
