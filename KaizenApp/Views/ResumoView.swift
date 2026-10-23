@@ -6,6 +6,8 @@ struct ResumoView: View {
     @StateObject private var viewModel = ResumoViewModel()
     @Binding var abaSelecionada: KaizenAppApp.Aba
     @Environment(\.scenePhase) private var scenePhase
+    @State private var mostrarModelos = false
+    @StateObject private var rotinaViewModel = RotinaViewModel()
 
     var body: some View {
         NavigationStack {
@@ -24,6 +26,12 @@ struct ResumoView: View {
             .navigationDestination(for: Int64.self) { id in
                 if let rotina = RotinaDAO().buscar(id: id) {
                     DetalheRotinaView(rotina: rotina)
+                }
+            }
+            .navigationDestination(isPresented: $mostrarModelos) {
+                ModelosView(viewModel: rotinaViewModel) { _ in
+                    mostrarModelos = false
+                    viewModel.carregar()
                 }
             }
             .onAppear { viewModel.carregar() }
@@ -105,11 +113,29 @@ struct ResumoView: View {
             Text("Suas rotinas")
                 .font(.title3.bold())
             if viewModel.rotinas.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Comece criando sua primeira rotina.")
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Comece com uma rotina pronta e ajuste do seu jeito.")
                         .foregroundStyle(.secondary)
-                    Button("Criar rotina") { abaSelecionada = .rotinas }
-                        .buttonStyle(.borderedProminent)
+                    // Três modelos de atalho, e o resto na galeria
+                    HStack(spacing: 10) {
+                        ForEach(ModeloRotina.todos.prefix(3)) { modelo in
+                            NavigationLink {
+                                ModeloDetalheView(modelo: modelo, viewModel: rotinaViewModel) { _ in
+                                    viewModel.carregar()
+                                }
+                            } label: {
+                                CartaoModelo(modelo: modelo)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    HStack {
+                        Button("Ver todos os modelos") { mostrarModelos = true }
+                        Spacer()
+                        Button("Criar do zero") { abaSelecionada = .rotinas }
+                            .foregroundStyle(.secondary)
+                    }
+                    .font(.subheadline)
                 }
                 .padding(.vertical, 8)
             } else {

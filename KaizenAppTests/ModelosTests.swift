@@ -45,3 +45,18 @@ struct ProgressoTests {
         #expect(!ProgressoRotina(concluidas: 0, total: 0).completo)
     }
 }
+
+@MainActor
+struct ModeloRotinaTests {
+    @Test func modelosSaoValidos() {
+        let modelos = ModeloRotina.todos
+        #expect(!modelos.isEmpty)
+        #expect(Set(modelos.map(\.nome)).count == modelos.count)   // ids únicos
+        for modelo in modelos {
+            #expect(["Diária", "Semanal", "Mensal"].contains(modelo.frequencia), "\(modelo.nome)")
+            #expect(!modelo.tarefas.isEmpty, "\(modelo.nome)")
+            #expect(Rotina.normalizarIcone(modelo.icone) == modelo.icone, "\(modelo.nome)")   // um emoji só
+            #expect(Set(modelo.tarefas.map(\.nome)).count == modelo.tarefas.count, "\(modelo.nome)")
+        }
+    }
+}

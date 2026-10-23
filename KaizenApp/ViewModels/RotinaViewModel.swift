@@ -59,6 +59,30 @@ class RotinaViewModel: ObservableObject {
         carregar()
     }
 
+    // Cria a rotina de um modelo com as tarefas dele (sem categoria e sem lembrete); devolve o id
+    @discardableResult
+    func criar(aPartirDe modelo: ModeloRotina) -> Int64? {
+        let nova = Rotina(
+            id: nil,
+            nome: modelo.nome,
+            descricao: modelo.descricao,
+            frequencia: modelo.frequencia,
+            ativa: true,
+            horarioLembrete: "",
+            lembreteAtivo: false,
+            icone: modelo.icone
+        )
+        guard let id = dao.inserir(nova) else { return nil }
+
+        let tarefaDao = TarefaDAO()
+        for (ordem, tarefa) in modelo.tarefas.enumerated() {
+            tarefaDao.inserir(Tarefa(id: nil, rotinaId: id, nome: tarefa.nome, ordem: ordem,
+                                     concluidaHoje: false, nota: tarefa.nota))
+        }
+        carregar()
+        return id
+    }
+
     func atualizar(_ rotina: Rotina) {
         dao.atualizar(rotina)
         if rotina.lembreteAtivo {
