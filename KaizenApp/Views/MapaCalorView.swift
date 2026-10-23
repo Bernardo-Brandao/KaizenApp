@@ -6,6 +6,7 @@ import SwiftUI
 struct MapaCalorView: View {
     let celulas: [CelulaMapa]
     let frequencia: String
+    var cor: Color = AppTheme.primary
 
     private let tamanho: CGFloat = 12
     private let espaco: CGFloat = 3
@@ -106,10 +107,10 @@ struct MapaCalorView: View {
 
     private func corPorNivel(_ nivel: Double) -> Color {
         switch nivel {
-        case 1...: return AppTheme.primary
-        case 0.5..<1: return AppTheme.primary.opacity(0.6)
-        case 0.0001..<0.5: return AppTheme.primary.opacity(0.3)
-        default: return AppTheme.primarySoft.opacity(0.5)
+        case 1...: return cor
+        case 0.5..<1: return cor.opacity(0.6)
+        case 0.0001..<0.5: return cor.opacity(0.3)
+        default: return cor.opacity(0.08)
         }
     }
 

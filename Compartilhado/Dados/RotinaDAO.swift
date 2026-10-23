@@ -14,6 +14,7 @@ class RotinaDAO {
     let lembreteAtivo = Expression<Bool>("lembreteAtivo")
     let categoriaId = Expression<Int64?>("categoriaId")
     let diaLembrete = Expression<Int>("diaLembrete")
+    let icone = Expression<String>("icone")
 
     // CREATE — agora retorna o id gerado, pra podermos agendar a notificação certa
     @discardableResult
@@ -26,7 +27,8 @@ class RotinaDAO {
             horarioLembrete <- rotina.horarioLembrete,
             lembreteAtivo <- rotina.lembreteAtivo,
             categoriaId <- rotina.categoriaId,
-            diaLembrete <- rotina.diaLembrete
+            diaLembrete <- rotina.diaLembrete,
+            icone <- rotina.icone
         )
         return try? db?.run(insert)
     }
@@ -45,7 +47,8 @@ class RotinaDAO {
                     horarioLembrete: row[horarioLembrete],
                     lembreteAtivo: row[lembreteAtivo],
                     categoriaId: row[categoriaId],
-                    diaLembrete: row[diaLembrete]
+                    diaLembrete: row[diaLembrete],
+                    icone: row[icone]
                 ))
             }
         }
@@ -63,7 +66,8 @@ class RotinaDAO {
             horarioLembrete: row[horarioLembrete],
             lembreteAtivo: row[lembreteAtivo],
             categoriaId: row[categoriaId],
-            diaLembrete: row[diaLembrete]
+            diaLembrete: row[diaLembrete],
+            icone: row[icone]
         )
     }
 
@@ -79,7 +83,8 @@ class RotinaDAO {
             horarioLembrete <- rotina.horarioLembrete,
             lembreteAtivo <- rotina.lembreteAtivo,
             categoriaId <- rotina.categoriaId,
-            diaLembrete <- rotina.diaLembrete
+            diaLembrete <- rotina.diaLembrete,
+            icone <- rotina.icone
         ))
     }
 

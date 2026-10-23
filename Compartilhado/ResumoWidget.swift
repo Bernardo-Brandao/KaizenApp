@@ -8,6 +8,8 @@ struct ResumoRotina: Identifiable {
     let tarefas: [ResumoTarefa]
     let corHex: String?      // cor da categoria, se tiver
     let validoAte: Date      // início do próximo período — dali em diante o progresso zera
+    var frequencia: String = "Diária"
+    var icone: String = ""   // emoji da rotina (vazio = sem emoji)
 
     var total: Int { tarefas.count }
 
@@ -46,7 +48,9 @@ enum ResumoWidget {
                 nome: rotina.nome,
                 tarefas: tarefas,
                 corHex: categorias.first { $0.id == rotina.categoriaId }?.corHex,
-                validoAte: validoAte
+                validoAte: validoAte,
+                frequencia: rotina.frequencia,
+                icone: rotina.iconeExibido
             )
         }
     }

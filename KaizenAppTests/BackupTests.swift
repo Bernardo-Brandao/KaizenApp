@@ -12,9 +12,9 @@ struct BackupTests {
             categorias: [.init(id: 3, nome: "Saúde", corHex: "34C759")],
             rotinas: [
                 .init(id: 10, nome: "Manhã", descricao: "Começar o dia", frequencia: "Diária", ativa: true,
-                      horarioLembrete: "07:30", lembreteAtivo: true, categoriaId: 3, diaLembrete: 1),
+                      horarioLembrete: "07:30", lembreteAtivo: true, categoriaId: 3, diaLembrete: 1, icone: "🌅"),
                 .init(id: 11, nome: "Faxina", descricao: "", frequencia: "Semanal", ativa: false,
-                      horarioLembrete: "", lembreteAtivo: false, categoriaId: nil, diaLembrete: 7),
+                      horarioLembrete: "", lembreteAtivo: false, categoriaId: nil, diaLembrete: 7, icone: ""),
             ],
             tarefas: [
                 .init(id: 100, rotinaId: 10, nome: "Água", ordem: 0, dataConclusao: "2026-10-20", nota: "2 litros"),

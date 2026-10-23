@@ -37,7 +37,7 @@ class RotinaViewModel: ObservableObject {
         WidgetSync.atualizar()
     }
 
-    func adicionar(nome: String, descricao: String, frequencia: String, horarioLembrete: String, lembreteAtivo: Bool, diaLembrete: Int, categoriaId: Int64?) {
+    func adicionar(nome: String, descricao: String, frequencia: String, horarioLembrete: String, lembreteAtivo: Bool, diaLembrete: Int, categoriaId: Int64?, icone: String = "") {
         let nova = Rotina(
             id: nil,
             nome: nome,
@@ -47,7 +47,8 @@ class RotinaViewModel: ObservableObject {
             horarioLembrete: horarioLembrete,
             lembreteAtivo: lembreteAtivo,
             categoriaId: categoriaId,
-            diaLembrete: diaLembrete
+            diaLembrete: diaLembrete,
+            icone: icone
         )
 
         if let novoId = dao.inserir(nova) {

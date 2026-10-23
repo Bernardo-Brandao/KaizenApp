@@ -20,6 +20,7 @@ struct Backup: Codable {
     struct RotinaBackup: Codable, Equatable {
         var id: Int64, nome: String, descricao: String, frequencia: String, ativa: Bool
         var horarioLembrete: String, lembreteAtivo: Bool, categoriaId: Int64?, diaLembrete: Int
+        var icone: String? = nil   // opcional: backups de antes do emoji não têm essa chave
     }
     struct TarefaBackup: Codable, Equatable {
         var id: Int64, rotinaId: Int64, nome: String, ordem: Int, dataConclusao: String
@@ -63,6 +64,7 @@ enum BackupService {
     private static let lembreteAtivo = Expression<Bool>("lembreteAtivo")
     private static let categoriaId = Expression<Int64?>("categoriaId")
     private static let diaLembrete = Expression<Int>("diaLembrete")
+    private static let icone = Expression<String>("icone")
     private static let rotinaId = Expression<Int64>("rotinaId")
     private static let ordem = Expression<Int>("ordem")
     private static let concluidaHoje = Expression<Bool>("concluidaHoje")
@@ -87,7 +89,7 @@ enum BackupService {
             rotinas: try db.prepare(rotinas).map {
                 .init(id: $0[id], nome: $0[nome], descricao: $0[descricao], frequencia: $0[frequencia],
                       ativa: $0[ativa], horarioLembrete: $0[horarioLembrete], lembreteAtivo: $0[lembreteAtivo],
-                      categoriaId: $0[categoriaId], diaLembrete: $0[diaLembrete])
+                      categoriaId: $0[categoriaId], diaLembrete: $0[diaLembrete], icone: $0[icone])
             },
             tarefas: try db.prepare(tarefas).map {
                 .init(id: $0[id], rotinaId: $0[rotinaId], nome: $0[nome], ordem: $0[ordem], dataConclusao: $0[dataConclusao],
@@ -137,7 +139,8 @@ enum BackupService {
                 try db.run(rotinas.insert(
                     id <- r.id, nome <- r.nome, descricao <- r.descricao, frequencia <- r.frequencia,
                     ativa <- r.ativa, horarioLembrete <- r.horarioLembrete, lembreteAtivo <- r.lembreteAtivo,
-                    categoriaId <- r.categoriaId, diaLembrete <- r.diaLembrete
+                    categoriaId <- r.categoriaId, diaLembrete <- r.diaLembrete,
+                    icone <- (r.icone ?? "")
                 ))
             }
             for t in backup.tarefas {

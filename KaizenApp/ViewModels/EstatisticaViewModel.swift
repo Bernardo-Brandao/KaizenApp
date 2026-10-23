@@ -74,6 +74,34 @@ class EstatisticasViewModel: ObservableObject {
         return streak
     }
 
+    // Maior sequência que a rotina já teve (o "recorde"), com a mesma regra do streak
+    var recorde: Int {
+        let completos = Set(porPeriodo.filter { $0.value.completoNoDia }.keys)
+        return Self.calcularRecorde(completos: completos, pausados: periodosPausados, frequencia: frequencia)
+    }
+
+    var periodosCompletos: Int {
+        porPeriodo.values.filter(\.completoNoDia).count
+    }
+
+    // Percorre os períodos completos do mais antigo pro mais novo: cada um continua a sequência
+    // se o período completo anterior vem logo antes dele (pulando períodos pausados).
+    static func calcularRecorde(completos: Set<String>, pausados: Set<String>, frequencia: String) -> Int {
+        var melhor = 0
+        var atual = 0
+        var ultimo: String?
+        for periodo in completos.sorted() {
+            var anterior = DataUtil.periodoAnterior(a: periodo, frequencia: frequencia)
+            while let a = anterior, pausados.contains(a), !completos.contains(a) {
+                anterior = DataUtil.periodoAnterior(a: a, frequencia: frequencia)
+            }
+            atual = (anterior != nil && anterior == ultimo) ? atual + 1 : 1
+            melhor = max(melhor, atual)
+            ultimo = periodo
+        }
+        return melhor
+    }
+
     // Percentual médio de conclusão entre os períodos registrados.
     // Períodos pausados e não completados ficam de fora, pra pausa não puxar a média pra baixo.
     var percentualMedio: Double {

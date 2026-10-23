@@ -6,17 +6,28 @@ struct ListaRotinasView: View {
     @State private var rotinaAberta: Rotina?
     @StateObject private var categoriaViewModel = CategoriaViewModel()
     @State private var busca = ""
-    @State private var filtroCategoriaId: Int64?   // nil = todas as categorias
     @State private var rotinaParaExcluir: Rotina?
     @State private var mostrarConfirmacaoExclusao = false
     @Environment(\.scenePhase) private var scenePhase
 
     var rotinasFiltradas: [Rotina] {
-        viewModel.rotinas.filter { rotina in
-            let passaBusca = busca.isEmpty || rotina.nome.localizedCaseInsensitiveContains(busca)
-            let passaCategoria = filtroCategoriaId == nil || rotina.categoriaId == filtroCategoriaId
-            return passaBusca && passaCategoria
+        viewModel.rotinas.filter { busca.isEmpty || $0.nome.localizedCaseInsensitiveContains(busca) }
+    }
+
+    // Rotinas ativas agrupadas por categoria (na ordem das categorias), com "Sem categoria" no fim
+    private var grupos: [(categoria: Categoria?, rotinas: [Rotina])] {
+        let ativas = rotinasFiltradas.filter(\.ativa)
+        var resultado: [(categoria: Categoria?, rotinas: [Rotina])] = categoriaViewModel.categorias.compactMap { categoria in
+            let doGrupo = ativas.filter { $0.categoriaId == categoria.id }
+            return doGrupo.isEmpty ? nil : (categoria, doGrupo)
         }
+        let semCategoria = ativas.filter { rotina in
+            !categoriaViewModel.categorias.contains { $0.id == rotina.categoriaId }
+        }
+        if !semCategoria.isEmpty {
+            resultado.append((nil, semCategoria))
+        }
+        return resultado
     }
 
     func categoria(de rotina: Rotina) -> Categoria? {
@@ -29,14 +40,10 @@ struct ListaRotinasView: View {
     private func linha(_ rotina: Rotina) -> some View {
         NavigationLink(destination: DetalheRotinaView(rotina: rotina)) {
             HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(rotina.nome).font(.headline)
-                    HStack(spacing: 6) {
-                        Text(rotina.frequencia).font(.subheadline).foregroundColor(.gray)
-                        if let categoria = categoria(de: rotina) {
-                            CategoriaTag(categoria: categoria)
-                        }
-                    }
+                IconeRotina(icone: rotina.iconeExibido)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(rotina.nome).font(.body.weight(.medium))
+                    Text(rotina.frequencia).font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
                 if !rotina.ativa {
@@ -44,7 +51,8 @@ struct ListaRotinasView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                 } else if let id = rotina.id, let progresso = viewModel.progresso[id], progresso.total > 0 {
-                    ProgressoAnel(progresso: progresso)
+                    ProgressoAnel(progresso: progresso,
+                                  cor: Estilo.cor(categoriaHex: categoria(de: rotina)?.corHex, frequencia: rotina.frequencia))
                 }
             }
             .opacity(rotina.ativa ? 1 : 0.6)
@@ -81,9 +89,20 @@ struct ListaRotinasView: View {
     var body: some View {
         NavigationStack {
             List {
-                Section {
-                    ForEach(rotinasFiltradas.filter { $0.ativa }) { rotina in
-                        linha(rotina)
+                ForEach(grupos, id: \.categoria?.id) { grupo in
+                    Section {
+                        ForEach(grupo.rotinas) { rotina in
+                            linha(rotina)
+                        }
+                    } header: {
+                        if let categoria = grupo.categoria {
+                            HStack(spacing: 6) {
+                                Circle().fill(Color(hex: categoria.corHex)).frame(width: 8, height: 8)
+                                Text(categoria.nome)
+                            }
+                        } else if !categoriaViewModel.categorias.isEmpty {
+                            Text("Sem categoria")
+                        }
                     }
                 }
                 let pausadas = rotinasFiltradas.filter { !$0.ativa }
@@ -96,30 +115,22 @@ struct ListaRotinasView: View {
                 }
             }
             .searchable(text: $busca, prompt: "Buscar rotina")
-            .navigationTitle("Minhas Rotinas")
+            .navigationTitle("Rotinas")
             .overlay {
-                if rotinasFiltradas.isEmpty && filtroCategoriaId != nil {
-                    ContentUnavailableView("Nenhuma rotina nessa categoria",
-                                           systemImage: "tag",
-                                           description: Text("Escolha outra categoria no filtro."))
+                if viewModel.rotinas.isEmpty {
+                    ContentUnavailableView {
+                        Label("Crie sua primeira rotina", systemImage: "checklist")
+                    } description: {
+                        Text("Uma rotina junta as tarefas que você quer repetir todo dia, semana ou mês.")
+                    } actions: {
+                        NavigationLink("Criar rotina") { NovaRotinaView(viewModel: viewModel) }
+                            .buttonStyle(.borderedProminent)
+                    }
+                } else if rotinasFiltradas.isEmpty {
+                    ContentUnavailableView.search(text: busca)
                 }
             }
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Menu {
-                        Picker("Filtrar por categoria", selection: $filtroCategoriaId) {
-                            Text("Todas").tag(Int64?.none)
-                            ForEach(categoriaViewModel.categorias) { categoria in
-                                Text(categoria.nome).tag(categoria.id)
-                            }
-                        }
-                    } label: {
-                        Image(systemName: filtroCategoriaId == nil
-                              ? "line.3.horizontal.decrease.circle"
-                              : "line.3.horizontal.decrease.circle.fill")
-                    }
-                    .disabled(categoriaViewModel.categorias.isEmpty)
-                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     NavigationLink(destination: NovaRotinaView(viewModel: viewModel)) {
                         Image(systemName: "plus")
@@ -138,11 +149,6 @@ struct ListaRotinasView: View {
                 abrirRotinaPedida()
                 viewModel.carregar()
                 categoriaViewModel.carregar()
-                // Se a categoria do filtro foi excluída, volta a mostrar todas
-                if let filtro = filtroCategoriaId,
-                   !categoriaViewModel.categorias.contains(where: { $0.id == filtro }) {
-                    filtroCategoriaId = nil
-                }
             }
             .confirmationDialog(
                 "Excluir rotina?",
@@ -163,6 +169,7 @@ struct ListaRotinasView: View {
 // Anel com o progresso do período atual e o "3/5" ao lado; vira um check quando completo
 struct ProgressoAnel: View {
     let progresso: ProgressoRotina
+    var cor: Color = AppTheme.primary
 
     var body: some View {
         HStack(spacing: 6) {
@@ -171,15 +178,15 @@ struct ProgressoAnel: View {
                 .foregroundColor(.secondary)
             ZStack {
                 Circle()
-                    .stroke(AppTheme.primarySoft, lineWidth: 4)
+                    .stroke(cor.opacity(0.18), lineWidth: 4)
                 Circle()
                     .trim(from: 0, to: progresso.percentual)
-                    .stroke(AppTheme.primary, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                    .stroke(cor, style: StrokeStyle(lineWidth: 4, lineCap: .round))
                     .rotationEffect(.degrees(-90))
                 if progresso.completo {
                     Image(systemName: "checkmark")
                         .font(.caption2.bold())
-                        .foregroundColor(AppTheme.primary)
+                        .foregroundColor(cor)
                 }
             }
             .frame(width: 26, height: 26)
