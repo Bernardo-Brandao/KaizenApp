@@ -45,7 +45,24 @@ struct KaizenWidgetView: View {
         entrada.rotinas.filter { $0.total > 0 }
     }
 
+    private var completas: Int {
+        rotinas.filter { $0.completa(em: entrada.date) }.count
+    }
+
     var body: some View {
+        Group {
+            switch familia {
+            case .accessoryCircular: bloqueioCircular
+            case .accessoryRectangular: bloqueioRetangular
+            case .accessoryInline: bloqueioEmLinha
+            default: telaInicial
+            }
+        }
+        .containerBackground(.fill.tertiary, for: .widget)
+    }
+
+    @ViewBuilder
+    private var telaInicial: some View {
         Group {
             if rotinas.isEmpty {
                 VStack(spacing: 6) {
@@ -63,12 +80,55 @@ struct KaizenWidgetView: View {
                 lista
             }
         }
-        .containerBackground(.fill.tertiary, for: .widget)
+    }
+
+    // MARK: - Tela de bloqueio (o sistema aplica as cores; aqui é só forma e texto)
+
+    private var bloqueioCircular: some View {
+        Gauge(value: Double(completas), in: 0...Double(max(rotinas.count, 1))) {
+            Image(systemName: "checklist")
+        } currentValueLabel: {
+            if !rotinas.isEmpty && completas == rotinas.count {
+                Image(systemName: "checkmark")
+            } else {
+                Text("\(completas)/\(rotinas.count)")
+            }
+        }
+        .gaugeStyle(.accessoryCircularCapacity)
+        .widgetAccentable()
+    }
+
+    // Próxima rotina com tarefa pendente; se não houver, "Tudo feito!"
+    private var bloqueioRetangular: some View {
+        let pendente = rotinas.first { !$0.completa(em: entrada.date) }
+        return VStack(alignment: .leading, spacing: 2) {
+            Label("Kaizen", systemImage: "checklist")
+                .font(.caption2.weight(.semibold))
+                .widgetAccentable()
+            if rotinas.isEmpty {
+                Text("Nenhuma rotina").font(.headline)
+            } else if let pendente {
+                Text(pendente.nome)
+                    .font(.headline)
+                    .lineLimit(1)
+                Text("\(pendente.concluidas(em: entrada.date))/\(pendente.total) tarefas · \(completas)/\(rotinas.count) rotinas")
+                    .font(.caption)
+                    .lineLimit(1)
+            } else {
+                Text("Tudo feito!").font(.headline)
+                Text("\(rotinas.count) de \(rotinas.count) rotinas").font(.caption)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var bloqueioEmLinha: some View {
+        Label(rotinas.isEmpty ? "Kaizen" : "\(completas) de \(rotinas.count) rotinas",
+              systemImage: "checklist")
     }
 
     private var resumoGeral: some View {
-        let completas = rotinas.filter { $0.completa(em: entrada.date) }.count
-        return VStack(spacing: 8) {
+        VStack(spacing: 8) {
             ZStack {
                 Anel(progresso: Double(completas) / Double(rotinas.count), cor: Cores.primaria, espessura: 8)
                 if completas == rotinas.count {
@@ -155,6 +215,7 @@ struct KaizenWidget: Widget {
         }
         .configurationDisplayName("Rotinas")
         .description("Progresso das suas rotinas no período atual.")
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .supportedFamilies([.systemSmall, .systemMedium,
+                            .accessoryCircular, .accessoryRectangular, .accessoryInline])
     }
 }
