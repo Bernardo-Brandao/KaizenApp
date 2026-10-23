@@ -2,6 +2,8 @@ import SwiftUI
 
 struct ListaRotinasView: View {
     @StateObject var viewModel = RotinaViewModel()
+    @Binding var rotinaParaAbrir: Int64?            // pedido vindo de um link do widget
+    @State private var rotinaAberta: Rotina?
     @StateObject private var categoriaViewModel = CategoriaViewModel()
     @State private var busca = ""
     @State private var filtroCategoriaId: Int64?   // nil = todas as categorias
@@ -69,6 +71,13 @@ struct ListaRotinasView: View {
         }
     }
 
+    // Abre a rotina pedida pelo link e limpa o pedido
+    private func abrirRotinaPedida() {
+        guard let id = rotinaParaAbrir else { return }
+        rotinaParaAbrir = nil
+        rotinaAberta = RotinaDAO().buscar(id: id)
+    }
+
     var body: some View {
         NavigationStack {
             List {
@@ -121,7 +130,12 @@ struct ListaRotinasView: View {
             .onChange(of: scenePhase) { _, fase in
                 if fase == .active { viewModel.carregar() }
             }
+            .navigationDestination(item: $rotinaAberta) { rotina in
+                DetalheRotinaView(rotina: rotina)
+            }
+            .onChange(of: rotinaParaAbrir) { abrirRotinaPedida() }
             .onAppear {
+                abrirRotinaPedida()
                 viewModel.carregar()
                 categoriaViewModel.carregar()
                 // Se a categoria do filtro foi excluída, volta a mostrar todas
