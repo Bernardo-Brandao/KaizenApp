@@ -56,6 +56,22 @@ struct EstatisticasView: View {
                     }
                 }
 
+                // Mapa de calor dos últimos 12 meses
+                if viewModel.periodosRegistrados > 0 {
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack(alignment: .firstTextBaseline) {
+                            Text("Últimos 12 meses")
+                                .font(.headline)
+                            Spacer()
+                            Text(rotuloCompletosNoAno)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        MapaCalorView(celulas: viewModel.mapaDeCalor, frequencia: rotina.frequencia)
+                    }
+                    .padding(.horizontal)
+                }
+
                 if viewModel.periodosRegistrados == 0 {
                     Text("Complete tarefas por alguns dias para começar a ver suas estatísticas aqui.")
                         .foregroundColor(.secondary)
@@ -95,6 +111,15 @@ struct EstatisticasView: View {
         case "Semanal": return um ? "semana seguida" : "semanas seguidas"
         case "Mensal": return um ? "mês seguido" : "meses seguidos"
         default: return um ? "dia seguido" : "dias seguidos"
+        }
+    }
+
+    private var rotuloCompletosNoAno: String {
+        let total = viewModel.periodosCompletosNoAno
+        switch rotina.frequencia {
+        case "Semanal": return total == 1 ? "1 semana completa" : "\(total) semanas completas"
+        case "Mensal": return total == 1 ? "1 mês completo" : "\(total) meses completos"
+        default: return total == 1 ? "1 dia completo" : "\(total) dias completos"
         }
     }
 

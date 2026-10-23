@@ -109,4 +109,61 @@ class EstatisticasViewModel: ObservableObject {
             return normalizado
         }
     }
+
+    // MARK: - Mapa de calor
+
+    // Uma célula por período dos últimos 12 meses, do mais antigo pro mais recente
+    var mapaDeCalor: [CelulaMapa] {
+        let registros = porPeriodo
+        return Self.periodosUltimoAno(frequencia: frequencia).map { periodo in
+            let registro = registros[periodo]
+            return CelulaMapa(
+                periodo: periodo,
+                percentual: registro.map(\.percentual),
+                completo: registro?.completoNoDia ?? false,
+                pausado: periodosPausados.contains(periodo)
+            )
+        }
+    }
+
+    var periodosCompletosNoAno: Int {
+        mapaDeCalor.filter(\.completo).count
+    }
+
+    // Inícios de período dos últimos 12 meses, do mais antigo pro mais recente.
+    // Diária: 365 dias, recuando até o domingo pra a grade começar alinhada na primeira linha.
+    // Semanal: 52 semanas. Mensal: 12 meses.
+    static func periodosUltimoAno(frequencia: String, hoje: String = DataUtil.hoje()) -> [String] {
+        let atual = DataUtil.periodoAtual(frequencia: frequencia, hoje: hoje)
+        var periodos = [atual]
+
+        switch frequencia {
+        case "Semanal", "Mensal":
+            let quantidade = frequencia == "Semanal" ? 52 : 12
+            while periodos.count < quantidade,
+                  let anterior = DataUtil.periodoAnterior(a: periodos[periodos.count - 1], frequencia: frequencia) {
+                periodos.append(anterior)
+            }
+        default:
+            // Recua 364 dias e depois até o domingo daquela semana
+            var inicio = atual
+            for _ in 0..<364 {
+                inicio = DataUtil.diaAnterior(a: inicio) ?? inicio
+            }
+            inicio = DataUtil.inicioPeriodo(inicio, frequencia: "Semanal")
+            while let anterior = DataUtil.diaAnterior(a: periodos[periodos.count - 1]), anterior >= inicio {
+                periodos.append(anterior)
+            }
+        }
+        return periodos.reversed()
+    }
+}
+
+struct CelulaMapa: Identifiable {
+    let periodo: String        // início do período ("yyyy-MM-dd")
+    let percentual: Double?    // nil = sem registro
+    let completo: Bool
+    let pausado: Bool
+
+    var id: String { periodo }
 }
