@@ -23,6 +23,7 @@ struct Backup: Codable {
     }
     struct TarefaBackup: Codable, Equatable {
         var id: Int64, rotinaId: Int64, nome: String, ordem: Int, dataConclusao: String
+        var nota: String? = nil   // opcional: backups de antes das notas não têm essa chave
     }
     struct HistoricoBackup: Codable, Equatable {
         var id: Int64, rotinaId: Int64, data: String, totalTarefas: Int, tarefasConcluidas: Int
@@ -71,6 +72,7 @@ enum BackupService {
     private static let tarefasConcluidas = Expression<Int>("tarefasConcluidas")
     private static let inicio = Expression<String>("inicio")
     private static let fim = Expression<String>("fim")
+    private static let nota = Expression<String>("nota")
 
     // MARK: - Exportar
 
@@ -88,7 +90,8 @@ enum BackupService {
                       categoriaId: $0[categoriaId], diaLembrete: $0[diaLembrete])
             },
             tarefas: try db.prepare(tarefas).map {
-                .init(id: $0[id], rotinaId: $0[rotinaId], nome: $0[nome], ordem: $0[ordem], dataConclusao: $0[dataConclusao])
+                .init(id: $0[id], rotinaId: $0[rotinaId], nome: $0[nome], ordem: $0[ordem], dataConclusao: $0[dataConclusao],
+                      nota: $0[nota])
             },
             historico: try db.prepare(historico).map {
                 .init(id: $0[id], rotinaId: $0[rotinaId], data: $0[data],
@@ -140,7 +143,8 @@ enum BackupService {
             for t in backup.tarefas {
                 try db.run(tarefas.insert(
                     id <- t.id, rotinaId <- t.rotinaId, nome <- t.nome, ordem <- t.ordem,
-                    concluidaHoje <- !t.dataConclusao.isEmpty, dataConclusao <- t.dataConclusao
+                    concluidaHoje <- !t.dataConclusao.isEmpty, dataConclusao <- t.dataConclusao,
+                    nota <- (t.nota ?? "")
                 ))
             }
             for h in backup.historico {

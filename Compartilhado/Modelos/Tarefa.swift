@@ -6,4 +6,5 @@ struct Tarefa: Identifiable {
     var nome: String
     var ordem: Int
     var concluidaHoje: Bool
+    var nota: String = ""   // observação opcional, ex.: "30 min", "3 séries de 12"
 }

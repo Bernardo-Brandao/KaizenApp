@@ -17,8 +17,8 @@ struct BackupTests {
                       horarioLembrete: "", lembreteAtivo: false, categoriaId: nil, diaLembrete: 7),
             ],
             tarefas: [
-                .init(id: 100, rotinaId: 10, nome: "Água", ordem: 0, dataConclusao: "2026-10-20"),
-                .init(id: 101, rotinaId: 10, nome: "Alongar", ordem: 1, dataConclusao: ""),
+                .init(id: 100, rotinaId: 10, nome: "Água", ordem: 0, dataConclusao: "2026-10-20", nota: "2 litros"),
+                .init(id: 101, rotinaId: 10, nome: "Alongar", ordem: 1, dataConclusao: "", nota: ""),
             ],
             historico: [.init(id: 1, rotinaId: 10, data: "2026-10-19", totalTarefas: 2, tarefasConcluidas: 2)],
             pausas: [.init(id: 1, rotinaId: 11, inicio: "2026-10-15", fim: "")]
@@ -67,6 +67,22 @@ struct BackupTests {
         futuro.versao = Backup.versaoAtual + 1
         let dados = try BackupService.json(futuro)
         #expect(throws: BackupErro.self) { try BackupService.ler(dados) }
+    }
+
+    @Test func leBackupAntigoSemNotas() throws {
+        // Formato de antes das notas: tarefa sem a chave "nota"
+        let antigo = """
+        {"versao": 1, "exportadoEm": "2026-10-22T12:00:00Z", "categorias": [], "pausas": [], "historico": [],
+         "rotinas": [{"id": 1, "nome": "Manhã", "descricao": "", "frequencia": "Diária", "ativa": true,
+                      "horarioLembrete": "", "lembreteAtivo": false, "diaLembrete": 1}],
+         "tarefas": [{"id": 5, "rotinaId": 1, "nome": "Água", "ordem": 0, "dataConclusao": ""}]}
+        """
+        let backup = try BackupService.ler(Data(antigo.utf8))
+        #expect(backup.tarefas.first?.nota == nil)
+
+        let db = DatabaseManager.bancoEmMemoria()
+        try BackupService.restaurar(backup, db: db)
+        #expect(try BackupService.gerar(db: db).tarefas.first?.nota == "")
     }
 
     @Test func recusaArquivoQueNaoEhBackup() {

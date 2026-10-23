@@ -85,6 +85,7 @@ class DatabaseManager {
         let ordem = Expression<Int>("ordem")
         let concluidaHoje = Expression<Bool>("concluidaHoje")
         let dataConclusao = Expression<String>("dataConclusao")
+        let nota = Expression<String>("nota")
 
         let corHex = Expression<String>("corHex")
 
@@ -111,6 +112,7 @@ class DatabaseManager {
             t.column(ordem)
             t.column(concluidaHoje)
             t.column(dataConclusao, defaultValue: "")
+            t.column(nota, defaultValue: "")
         })
 
         try? db?.run(categorias.create(ifNotExists: true) { t in
@@ -148,6 +150,7 @@ class DatabaseManager {
         try? db?.execute("ALTER TABLE rotinas ADD COLUMN diaLembrete INTEGER DEFAULT 1")
         // Dia em que a tarefa foi concluída ("yyyy-MM-dd"); vazio se não concluída
         try? db?.execute("ALTER TABLE tarefas ADD COLUMN dataConclusao TEXT DEFAULT ''")
+        try? db?.execute("ALTER TABLE tarefas ADD COLUMN nota TEXT DEFAULT ''")
 
         // Limpa tarefas e histórico de rotinas que já foram excluídas
         try? db?.execute("DELETE FROM tarefas WHERE rotinaId NOT IN (SELECT id FROM rotinas)")
