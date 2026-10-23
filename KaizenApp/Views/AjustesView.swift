@@ -6,6 +6,7 @@ struct AjustesView: View {
     @State private var mostrarImportador = false
     @State private var backupPendente: Backup?        // lido do arquivo, esperando confirmação
     @State private var mensagem: Mensagem?
+    @AppStorage("resumoSemanalAtivo") private var resumoSemanalAtivo = true
 
     var body: some View {
         NavigationStack {
@@ -23,6 +24,19 @@ struct AjustesView: View {
                     Text("Backup")
                 } footer: {
                     Text("O backup guarda rotinas, tarefas, categorias, histórico e pausas num arquivo. Importar substitui todos os dados atuais.")
+                }
+
+                Section {
+                    Toggle(isOn: $resumoSemanalAtivo) {
+                        Label("Resumo semanal", systemImage: "calendar")
+                    }
+                    .onChange(of: resumoSemanalAtivo) { _, ativo in
+                        NotificationManager.shared.agendarResumoSemanal(ativo: ativo)
+                    }
+                } header: {
+                    Text("Notificações")
+                } footer: {
+                    Text("Todo domingo às 19h, uma notificação com como foi a sua semana.")
                 }
 
                 Section("Organização") {

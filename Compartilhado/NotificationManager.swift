@@ -114,6 +114,27 @@ class NotificationManager {
         UNUserNotificationCenter.current().add(request)
     }
 
+    // Todo domingo às 19h: "Sua semana no Kaizen". Tocar abre o resumo da semana (NotificacaoDelegate).
+    static let idResumoSemanal = "resumo-semanal"
+
+    func agendarResumoSemanal(ativo: Bool) {
+        let centro = UNUserNotificationCenter.current()
+        centro.removePendingNotificationRequests(withIdentifiers: [Self.idResumoSemanal])
+        guard ativo else { return }
+
+        let content = UNMutableNotificationContent()
+        content.title = "Sua semana no Kaizen"
+        content.body = "Veja como foram suas rotinas nesta semana."
+        content.sound = .default
+        content.userInfo = ["tipo": "semana"]
+
+        var quando = DateComponents()
+        quando.weekday = 1   // domingo
+        quando.hour = 19
+        let trigger = UNCalendarNotificationTrigger(dateMatching: quando, repeats: true)
+        centro.add(UNNotificationRequest(identifier: Self.idResumoSemanal, content: content, trigger: trigger))
+    }
+
     private static func conteudo(para rotina: Rotina) -> UNMutableNotificationContent {
         let content = UNMutableNotificationContent()
         content.title = "Hora da sua rotina"
