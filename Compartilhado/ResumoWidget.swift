@@ -10,6 +10,7 @@ struct ResumoRotina: Identifiable {
     let validoAte: Date      // início do próximo período — dali em diante o progresso zera
     var frequencia: String = "Diária"
     var icone: String = ""   // emoji da rotina (vazio = sem emoji)
+    var programadaHoje = true  // false = dia de folga de uma rotina diária com dias escolhidos
 
     var total: Int { tarefas.count }
 
@@ -50,7 +51,8 @@ enum ResumoWidget {
                 corHex: categorias.first { $0.id == rotina.categoriaId }?.corHex,
                 validoAte: validoAte,
                 frequencia: rotina.frequencia,
-                icone: rotina.iconeExibido
+                icone: rotina.iconeExibido,
+                programadaHoje: rotina.programada(em: DataUtil.hoje())
             )
         }
     }

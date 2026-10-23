@@ -12,13 +12,13 @@ struct BackupTests {
             categorias: [.init(id: 3, nome: "Saúde", corHex: "34C759")],
             rotinas: [
                 .init(id: 10, nome: "Manhã", descricao: "Começar o dia", frequencia: "Diária", ativa: true,
-                      horarioLembrete: "07:30", lembreteAtivo: true, categoriaId: 3, diaLembrete: 1, icone: "🌅"),
+                      horarioLembrete: "07:30", lembreteAtivo: true, categoriaId: 3, diaLembrete: 1, icone: "🌅", diasSemana: "2,4,6"),
                 .init(id: 11, nome: "Faxina", descricao: "", frequencia: "Semanal", ativa: false,
-                      horarioLembrete: "", lembreteAtivo: false, categoriaId: nil, diaLembrete: 7, icone: ""),
+                      horarioLembrete: "", lembreteAtivo: false, categoriaId: nil, diaLembrete: 7, icone: "", diasSemana: ""),
             ],
             tarefas: [
-                .init(id: 100, rotinaId: 10, nome: "Água", ordem: 0, dataConclusao: "2026-10-20", nota: "2 litros"),
-                .init(id: 101, rotinaId: 10, nome: "Alongar", ordem: 1, dataConclusao: "", nota: ""),
+                .init(id: 100, rotinaId: 10, nome: "Água", ordem: 0, dataConclusao: "2026-10-20", nota: "2 litros", diasSemana: "6"),
+                .init(id: 101, rotinaId: 10, nome: "Alongar", ordem: 1, dataConclusao: "", nota: "", diasSemana: ""),
             ],
             historico: [.init(id: 1, rotinaId: 10, data: "2026-10-19", totalTarefas: 2, tarefasConcluidas: 2)],
             pausas: [.init(id: 1, rotinaId: 11, inicio: "2026-10-15", fim: "")]

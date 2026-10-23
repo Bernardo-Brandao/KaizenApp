@@ -69,13 +69,20 @@ struct ResumoSemanalView: View {
                         if linha.frequencia == "Diária" {
                             HStack(spacing: 4) {
                                 ForEach(Array(linha.dias.enumerated()), id: \.offset) { _, feito in
-                                    Circle()
-                                        .fill(feito ? CoresAneis.hoje : Color(.tertiarySystemFill))
-                                        .frame(width: 12, height: 12)
+                                    if let feito {
+                                        Circle()
+                                            .fill(feito ? CoresAneis.hoje : Color(.tertiarySystemFill))
+                                            .frame(width: 12, height: 12)
+                                    } else {
+                                        // Folga: só o contorno
+                                        Circle()
+                                            .strokeBorder(Color(.tertiaryLabel), lineWidth: 1)
+                                            .frame(width: 12, height: 12)
+                                    }
                                 }
                             }
                             .accessibilityElement(children: .ignore)
-                            .accessibilityLabel("\(linha.dias.filter { $0 }.count) de 7 dias")
+                            .accessibilityLabel("\(linha.dias.filter { $0 == true }.count) de \(linha.dias.compactMap { $0 }.count) dias")
                         } else {
                             Label(linha.semanaCompleta ? "Completa" : "Incompleta",
                                   systemImage: linha.semanaCompleta ? "checkmark.circle.fill" : "circle")

@@ -12,13 +12,7 @@ enum ConclusaoTarefa {
         tarefa.concluidaHoje.toggle()
         dao.atualizar(tarefa)
 
-        let tarefas = dao.listarPorRotina(rotinaId, frequencia: rotina.frequencia)
-        HistoricoDAO().registrarProgresso(
-            rotinaId: rotinaId,
-            frequencia: rotina.frequencia,
-            total: tarefas.count,
-            concluidas: tarefas.filter(\.concluidaHoje).count
-        )
+        registrarHistorico(rotina)
         // Completar a rotina cancela o lembrete do período (lembrete inteligente)
         NotificationManager.shared.atualizarLembrete(rotinaId: rotinaId)
     }
@@ -32,13 +26,19 @@ enum ConclusaoTarefa {
             dao.atualizar(tarefa)
         }
 
-        let tarefas = dao.listarPorRotina(rotinaId, frequencia: rotina.frequencia)
+        registrarHistorico(rotina)
+        NotificationManager.shared.atualizarLembrete(rotinaId: rotinaId)
+    }
+
+    // Progresso do período no histórico (não registra em dia de folga da rotina)
+    private static func registrarHistorico(_ rotina: Rotina) {
+        guard let id = rotina.id, rotina.programada(em: DataUtil.hoje()) else { return }
+        let tarefas = TarefaDAO().listarPorRotina(id, frequencia: rotina.frequencia)
         HistoricoDAO().registrarProgresso(
-            rotinaId: rotinaId,
+            rotinaId: id,
             frequencia: rotina.frequencia,
             total: tarefas.count,
             concluidas: tarefas.filter(\.concluidaHoje).count
         )
-        NotificationManager.shared.atualizarLembrete(rotinaId: rotinaId)
     }
 }

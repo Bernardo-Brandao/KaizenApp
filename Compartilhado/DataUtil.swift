@@ -25,6 +25,11 @@ enum DataUtil {
         formatter.date(from: dia)
     }
 
+    // 1 = domingo … 7 = sábado
+    static func diaDaSemana(_ dia: String) -> Int? {
+        data(de: dia).map { calendario.component(.weekday, from: $0) }
+    }
+
     static func hoje() -> String {
         string(de: Date())
     }

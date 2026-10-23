@@ -12,6 +12,7 @@ struct NovaRotinaView: View {
     @State private var categoriaId: Int64?
     @State private var diaLembrete = 1
     @State private var icone = ""
+    @State private var diasSemana: Set<Int> = []
     @State private var mostrarConfirmacao = false
 
     let opcoesFrequencia = ["Diária", "Semanal", "Mensal"]
@@ -35,6 +36,21 @@ struct NovaRotinaView: View {
                     }
                 }
                 .pickerStyle(.inline)
+            }
+
+            // Diária: em quais dias a rotina vale (nos outros, folga)
+            if frequencia == "Diária" {
+                Section {
+                    SeletorDiasSemana(dias: $diasSemana)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 4)
+                } header: {
+                    Text("Repetir em")
+                } footer: {
+                    Text(diasSemana.isEmpty
+                         ? "Todo dia."
+                         : "\(DiasSemana.descricao(diasSemana)). Nos outros dias a rotina fica de folga: não conta, não quebra a sequência e não tem lembrete.")
+                }
             }
 
             LembreteSection(
@@ -70,7 +86,8 @@ struct NovaRotinaView: View {
             lembreteAtivo: lembreteAtivo,
             diaLembrete: diaLembrete,
             categoriaId: categoriaId,
-            icone: icone
+            icone: icone,
+            diasSemana: frequencia == "Diária" ? diasSemana : []
         )
         mostrarConfirmacao = true
     }

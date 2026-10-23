@@ -32,7 +32,7 @@ struct TarefasWidgetView: View {
 
     // Próxima rotina pendente; se todas estiverem completas, a primeira (pra poder desmarcar)
     private var rotina: ResumoRotina? {
-        let comTarefas = entrada.rotinas.filter { $0.total > 0 }
+        let comTarefas = entrada.rotinas.filter { $0.total > 0 && $0.programadaHoje }
         return comTarefas.first { !$0.completa(em: entrada.date) } ?? comTarefas.first
     }
 

@@ -12,6 +12,7 @@ class TarefaDAO {
     let concluidaHoje = Expression<Bool>("concluidaHoje")
     let dataConclusao = Expression<String>("dataConclusao")
     let nota = Expression<String>("nota")
+    let diasSemana = Expression<String>("diasSemana")
 
     func inserir(_ tarefa: Tarefa) {
         let insert = table.insert(
@@ -20,12 +21,15 @@ class TarefaDAO {
             ordem <- tarefa.ordem,
             concluidaHoje <- tarefa.concluidaHoje,
             dataConclusao <- (tarefa.concluidaHoje ? DataUtil.hoje() : ""),
-            nota <- tarefa.nota
+            nota <- tarefa.nota,
+            diasSemana <- DiasSemana.codificar(tarefa.diasSemana)
         )
         try? db?.run(insert)
     }
 
-    func listarPorRotina(_ idRotina: Int64, frequencia: String) -> [Tarefa] {
+    // Por padrão só as tarefas do dia (em rotinas diárias, uma tarefa pode valer só em alguns dias);
+    // `dia: nil` traz todas, pra edição e organização
+    func listarPorRotina(_ idRotina: Int64, frequencia: String, dia: String? = DataUtil.hoje()) -> [Tarefa] {
         var lista: [Tarefa] = []
         let query = table.filter(rotinaId == idRotina).order(ordem)
         if let rows = try? db?.prepare(query) {
@@ -39,9 +43,13 @@ class TarefaDAO {
                     nome: row[nome],
                     ordem: row[ordem],
                     concluidaHoje: concluida,
-                    nota: row[nota]
+                    nota: row[nota],
+                    diasSemana: DiasSemana.decodificar(row[diasSemana])
                 ))
             }
+        }
+        if let dia, frequencia == "Diária" {
+            return lista.filter { $0.aparece(em: dia) }
         }
         return lista
     }
@@ -56,10 +64,12 @@ class TarefaDAO {
         ))
     }
 
-    // Só troca nome e nota — não mexe na conclusão da tarefa
-    func editar(_ tarefa: Tarefa, nome novoNome: String, nota novaNota: String) {
+    // Troca nome, nota e dias — não mexe na conclusão da tarefa
+    func editar(_ tarefa: Tarefa, nome novoNome: String, nota novaNota: String, dias: Set<Int>) {
         guard let tarefaId = tarefa.id else { return }
-        try? db?.run(table.filter(id == tarefaId).update(nome <- novoNome, nota <- novaNota))
+        try? db?.run(table.filter(id == tarefaId).update(
+            nome <- novoNome, nota <- novaNota, diasSemana <- DiasSemana.codificar(dias)
+        ))
     }
 
     // Grava a ordem das tarefas conforme a posição de cada uma na lista

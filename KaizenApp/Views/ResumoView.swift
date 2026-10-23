@@ -167,12 +167,17 @@ struct ResumoView: View {
             IconeRotina(icone: rotina.icone.isEmpty ? Rotina.iconePadrao : rotina.icone)
             VStack(alignment: .leading, spacing: 2) {
                 Text(rotina.nome).font(.body.weight(.medium))
-                Text(rotina.total == 0 ? "Sem tarefas" : "\(feitas) de \(rotina.total) · \(rotina.frequencia)")
+                Text(!rotina.programadaHoje ? "Folga hoje"
+                     : rotina.total == 0 ? "Sem tarefas" : "\(feitas) de \(rotina.total) · \(rotina.frequencia)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            if rotina.completa(em: .now) {
+            if !rotina.programadaHoje {
+                Image(systemName: "moon.zzz")
+                    .font(.title3)
+                    .foregroundStyle(.secondary)
+            } else if rotina.completa(em: .now) {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.title2)
                     .foregroundStyle(cor)

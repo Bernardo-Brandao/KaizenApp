@@ -26,7 +26,8 @@ class RotinaViewModel: ObservableObject {
 
         var novoProgresso: [Int64: ProgressoRotina] = [:]
         for rotina in rotinas {
-            guard let id = rotina.id else { continue }
+            // Em dia de folga não tem progresso (a lista mostra "Folga hoje")
+            guard let id = rotina.id, rotina.programada(em: DataUtil.hoje()) else { continue }
             let tarefas = tarefaDao.listarPorRotina(id, frequencia: rotina.frequencia)
             novoProgresso[id] = ProgressoRotina(
                 concluidas: tarefas.filter { $0.concluidaHoje }.count,
@@ -37,7 +38,7 @@ class RotinaViewModel: ObservableObject {
         WidgetSync.atualizar()
     }
 
-    func adicionar(nome: String, descricao: String, frequencia: String, horarioLembrete: String, lembreteAtivo: Bool, diaLembrete: Int, categoriaId: Int64?, icone: String = "") {
+    func adicionar(nome: String, descricao: String, frequencia: String, horarioLembrete: String, lembreteAtivo: Bool, diaLembrete: Int, categoriaId: Int64?, icone: String = "", diasSemana: Set<Int> = []) {
         let nova = Rotina(
             id: nil,
             nome: nome,
@@ -48,7 +49,8 @@ class RotinaViewModel: ObservableObject {
             lembreteAtivo: lembreteAtivo,
             categoriaId: categoriaId,
             diaLembrete: diaLembrete,
-            icone: icone
+            icone: icone,
+            diasSemana: DiasSemana.normalizar(diasSemana)
         )
 
         if let novoId = dao.inserir(nova) {
