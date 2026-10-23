@@ -11,6 +11,7 @@ class TarefaDAO {
     let ordem = Expression<Int>("ordem")
     let concluidaHoje = Expression<Bool>("concluidaHoje")
     let dataConclusao = Expression<String>("dataConclusao")
+    let nota = Expression<String>("nota")
 
     func inserir(_ tarefa: Tarefa) {
         let insert = table.insert(
@@ -18,7 +19,8 @@ class TarefaDAO {
             nome <- tarefa.nome,
             ordem <- tarefa.ordem,
             concluidaHoje <- tarefa.concluidaHoje,
-            dataConclusao <- (tarefa.concluidaHoje ? DataUtil.hoje() : "")
+            dataConclusao <- (tarefa.concluidaHoje ? DataUtil.hoje() : ""),
+            nota <- tarefa.nota
         )
         try? db?.run(insert)
     }
@@ -36,7 +38,8 @@ class TarefaDAO {
                     rotinaId: row[rotinaId],
                     nome: row[nome],
                     ordem: row[ordem],
-                    concluidaHoje: concluida
+                    concluidaHoje: concluida,
+                    nota: row[nota]
                 ))
             }
         }
@@ -53,10 +56,10 @@ class TarefaDAO {
         ))
     }
 
-    // Só troca o nome — não mexe na conclusão da tarefa
-    func renomear(_ tarefa: Tarefa, para novoNome: String) {
+    // Só troca nome e nota — não mexe na conclusão da tarefa
+    func editar(_ tarefa: Tarefa, nome novoNome: String, nota novaNota: String) {
         guard let tarefaId = tarefa.id else { return }
-        try? db?.run(table.filter(id == tarefaId).update(nome <- novoNome))
+        try? db?.run(table.filter(id == tarefaId).update(nome <- novoNome, nota <- novaNota))
     }
 
     // Grava a ordem das tarefas conforme a posição de cada uma na lista

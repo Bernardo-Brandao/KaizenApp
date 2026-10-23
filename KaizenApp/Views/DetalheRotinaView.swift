@@ -5,9 +5,11 @@ struct DetalheRotinaView: View {
     @State private var categoria: Categoria?
     @StateObject private var viewModel: TarefaViewModel
     @State private var novaTarefaNome = ""
+    @State private var novaTarefaNota = ""
     @State private var mostrarCampoNovaTarefa = false
-    @State private var tarefaParaRenomear: Tarefa?
+    @State private var tarefaParaEditar: Tarefa?
     @State private var nomeEditado = ""
+    @State private var notaEditada = ""
     @State private var mostrarOrganizar = false
     @State private var mostrarComemoracao = false
     @State private var toquesEmTarefas = 0      // gatilho da vibração leve a cada toque
@@ -81,9 +83,10 @@ struct DetalheRotinaView: View {
                         .contextMenu {
                             Button {
                                 nomeEditado = tarefa.nome
-                                tarefaParaRenomear = tarefa
+                                notaEditada = tarefa.nota
+                                tarefaParaEditar = tarefa
                             } label: {
-                                Label("Renomear", systemImage: "pencil")
+                                Label("Editar", systemImage: "pencil")
                             }
                             Button(role: .destructive) {
                                 viewModel.excluir(tarefa)
@@ -104,15 +107,21 @@ struct DetalheRotinaView: View {
                 }
 
                 if mostrarCampoNovaTarefa {
-                    HStack {
-                        TextField("Nome da tarefa", text: $novaTarefaNome)
-                            .textFieldStyle(.roundedBorder)
-                        Button("Adicionar") {
-                            guard !novaTarefaNome.isEmpty else { return }
-                            viewModel.adicionar(nome: novaTarefaNome)
-                            novaTarefaNome = ""
-                            mostrarCampoNovaTarefa = false
+                    VStack(spacing: 8) {
+                        HStack {
+                            TextField("Nome da tarefa", text: $novaTarefaNome)
+                                .textFieldStyle(.roundedBorder)
+                            Button("Adicionar") {
+                                guard !novaTarefaNome.isEmpty else { return }
+                                viewModel.adicionar(nome: novaTarefaNome, nota: novaTarefaNota)
+                                novaTarefaNome = ""
+                                novaTarefaNota = ""
+                                mostrarCampoNovaTarefa = false
+                            }
                         }
+                        TextField("Nota (opcional), ex.: 30 min", text: $novaTarefaNota)
+                            .textFieldStyle(.roundedBorder)
+                            .font(.subheadline)
                     }
                     .padding(.horizontal)
                 }
@@ -145,14 +154,15 @@ struct DetalheRotinaView: View {
                 }
             }
         }
-        .alert("Renomear tarefa", isPresented: Binding(
-            get: { tarefaParaRenomear != nil },
-            set: { if !$0 { tarefaParaRenomear = nil } }
+        .alert("Editar tarefa", isPresented: Binding(
+            get: { tarefaParaEditar != nil },
+            set: { if !$0 { tarefaParaEditar = nil } }
         )) {
             TextField("Nome da tarefa", text: $nomeEditado)
+            TextField("Nota (opcional)", text: $notaEditada)
             Button("Salvar") {
-                if let tarefa = tarefaParaRenomear {
-                    viewModel.renomear(tarefa, para: nomeEditado)
+                if let tarefa = tarefaParaEditar {
+                    viewModel.editar(tarefa, nome: nomeEditado, nota: notaEditada)
                 }
             }
             Button("Cancelar", role: .cancel) {}
@@ -226,7 +236,14 @@ struct OrganizarTarefasView: View {
         NavigationStack {
             List {
                 ForEach(viewModel.tarefas) { tarefa in
-                    Text(tarefa.nome)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(tarefa.nome)
+                        if !tarefa.nota.isEmpty {
+                            Text(tarefa.nota)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
                 }
                 .onMove { origem, destino in
                     viewModel.mover(de: origem, para: destino)
@@ -266,6 +283,13 @@ struct TarefaCard: View {
                     .foregroundColor(tarefa.concluidaHoje ? .secondary : .primary)
                     .strikethrough(tarefa.concluidaHoje)
                     .multilineTextAlignment(.leading)
+                if !tarefa.nota.isEmpty {
+                    Text(tarefa.nota)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+                }
             }
             .padding(14)
             .frame(maxWidth: .infinity, minHeight: 90, alignment: .topLeading)

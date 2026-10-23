@@ -25,6 +25,7 @@ struct ResumoTarefa: Identifiable {
     let id: Int64
     let nome: String
     let concluida: Bool
+    var nota: String = ""
 }
 
 enum ResumoWidget {
@@ -38,7 +39,7 @@ enum ResumoWidget {
                   let validoAte = DataUtil.inicioProximoPeriodo(frequencia: rotina.frequencia)
             else { return nil }
             let tarefas = tarefaDao.listarPorRotina(id, frequencia: rotina.frequencia).compactMap { tarefa in
-                tarefa.id.map { ResumoTarefa(id: $0, nome: tarefa.nome, concluida: tarefa.concluidaHoje) }
+                tarefa.id.map { ResumoTarefa(id: $0, nome: tarefa.nome, concluida: tarefa.concluidaHoje, nota: tarefa.nota) }
             }
             return ResumoRotina(
                 id: id,

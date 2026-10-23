@@ -93,6 +93,12 @@ struct TarefasWidgetView: View {
                             .strikethrough(feita)
                             .foregroundStyle(feita ? .secondary : .primary)
                             .lineLimit(1)
+                        if !tarefa.nota.isEmpty {
+                            Text(tarefa.nota)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
                         Spacer(minLength: 0)
                     }
                     .contentShape(Rectangle())

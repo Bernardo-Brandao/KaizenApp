@@ -18,9 +18,10 @@ class TarefaViewModel: ObservableObject {
         registrarProgressoAtual()
     }
 
-    func adicionar(nome: String) {
+    func adicionar(nome: String, nota: String = "") {
         let novaOrdem = tarefas.count
-        let nova = Tarefa(id: nil, rotinaId: rotinaId, nome: nome, ordem: novaOrdem, concluidaHoje: false)
+        let nova = Tarefa(id: nil, rotinaId: rotinaId, nome: nome, ordem: novaOrdem, concluidaHoje: false,
+                          nota: nota.trimmingCharacters(in: .whitespacesAndNewlines))
         dao.inserir(nova)
         carregar()
         atualizarLembrete()
@@ -42,10 +43,10 @@ class TarefaViewModel: ObservableObject {
         !tarefas.isEmpty && tarefas.allSatisfy { $0.concluidaHoje }
     }
 
-    func renomear(_ tarefa: Tarefa, para nome: String) {
+    func editar(_ tarefa: Tarefa, nome: String, nota: String) {
         let nomeLimpo = nome.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !nomeLimpo.isEmpty else { return }
-        dao.renomear(tarefa, para: nomeLimpo)
+        dao.editar(tarefa, nome: nomeLimpo, nota: nota.trimmingCharacters(in: .whitespacesAndNewlines))
         carregar()
     }
 
