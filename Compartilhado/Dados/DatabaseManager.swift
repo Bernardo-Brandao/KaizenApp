@@ -80,6 +80,7 @@ class DatabaseManager {
         let lembreteAtivo = Expression<Bool>("lembreteAtivo")
         let categoriaId = Expression<Int64?>("categoriaId")
         let diaLembrete = Expression<Int>("diaLembrete")
+        let icone = Expression<String>("icone")
 
         let rotinaId = Expression<Int64>("rotinaId")
         let ordem = Expression<Int>("ordem")
@@ -103,6 +104,7 @@ class DatabaseManager {
             t.column(lembreteAtivo, defaultValue: false)
             t.column(categoriaId)
             t.column(diaLembrete, defaultValue: 1)
+            t.column(icone, defaultValue: "")
         })
 
         try? db?.run(tarefas.create(ifNotExists: true) { t in
@@ -148,6 +150,7 @@ class DatabaseManager {
         try? db?.execute("ALTER TABLE rotinas ADD COLUMN lembreteAtivo INTEGER DEFAULT 0")
         try? db?.execute("ALTER TABLE rotinas ADD COLUMN categoriaId INTEGER")
         try? db?.execute("ALTER TABLE rotinas ADD COLUMN diaLembrete INTEGER DEFAULT 1")
+        try? db?.execute("ALTER TABLE rotinas ADD COLUMN icone TEXT DEFAULT ''")
         // Dia em que a tarefa foi concluída ("yyyy-MM-dd"); vazio se não concluída
         try? db?.execute("ALTER TABLE tarefas ADD COLUMN dataConclusao TEXT DEFAULT ''")
         try? db?.execute("ALTER TABLE tarefas ADD COLUMN nota TEXT DEFAULT ''")

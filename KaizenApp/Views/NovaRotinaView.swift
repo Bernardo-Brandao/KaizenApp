@@ -11,6 +11,7 @@ struct NovaRotinaView: View {
     @State private var horarioLembrete = Date()
     @State private var categoriaId: Int64?
     @State private var diaLembrete = 1
+    @State private var icone = ""
     @State private var mostrarConfirmacao = false
 
     let opcoesFrequencia = ["Diária", "Semanal", "Mensal"]
@@ -18,7 +19,10 @@ struct NovaRotinaView: View {
     var body: some View {
         Form {
             Section("Informações da rotina") {
-                TextField("Nome da rotina", text: $nome)
+                HStack {
+                    CampoEmoji(icone: $icone)
+                    TextField("Nome da rotina", text: $nome)
+                }
                 TextField("Descrição", text: $descricao)
             }
 
@@ -65,7 +69,8 @@ struct NovaRotinaView: View {
             horarioLembrete: horarioTexto,
             lembreteAtivo: lembreteAtivo,
             diaLembrete: diaLembrete,
-            categoriaId: categoriaId
+            categoriaId: categoriaId,
+            icone: icone
         )
         mostrarConfirmacao = true
     }

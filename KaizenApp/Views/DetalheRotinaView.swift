@@ -1,16 +1,23 @@
 import SwiftUI
 
+// Página da rotina, no estilo do Notion: capa na cor da rotina, emoji, título,
+// propriedades em linhas e as tarefas como uma checklist
 struct DetalheRotinaView: View {
     @State private var rotina: Rotina      // recarregada do banco ao aparecer, pra refletir edições
     @State private var categoria: Categoria?
+    @State private var sequencia = 0
+    @State private var recorde = 0
     @StateObject private var viewModel: TarefaViewModel
     @State private var novaTarefaNome = ""
     @State private var novaTarefaNota = ""
     @State private var mostrarCampoNovaTarefa = false
+    @FocusState private var focoNovaTarefa: Bool
     @State private var tarefaParaEditar: Tarefa?
     @State private var nomeEditado = ""
     @State private var notaEditada = ""
     @State private var mostrarOrganizar = false
+    @State private var mostrarEdicao = false
+    @State private var mostrarEstatisticas = false
     @State private var mostrarComemoracao = false
     @State private var toquesEmTarefas = 0      // gatilho da vibração leve a cada toque
     @State private var conclusoes = 0           // gatilho da vibração de sucesso
@@ -21,112 +28,32 @@ struct DetalheRotinaView: View {
         _viewModel = StateObject(wrappedValue: TarefaViewModel(rotinaId: rotina.id ?? 0, frequencia: rotina.frequencia))
     }
 
-    let colunas = [
-        GridItem(.flexible(), spacing: 14),
-        GridItem(.flexible(), spacing: 14)
-    ]
+    private var cor: Color {
+        Estilo.cor(categoriaHex: categoria?.corHex, frequencia: rotina.frequencia)
+    }
 
-    var progresso: Double {
-        guard !viewModel.tarefas.isEmpty else { return 0 }
-        let concluidas = viewModel.tarefas.filter { $0.concluidaHoje }.count
-        return Double(concluidas) / Double(viewModel.tarefas.count)
+    private var concluidas: Int {
+        viewModel.tarefas.filter(\.concluidaHoje).count
     }
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-
-                // Cabeçalho
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(rotina.nome)
-                        .font(.largeTitle.bold())
-                    HStack(spacing: 8) {
-                        Text(rotina.frequencia)
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        if let categoria {
-                            CategoriaTag(categoria: categoria)
-                        }
+            VStack(alignment: .leading, spacing: 0) {
+                capa
+                VStack(alignment: .leading, spacing: 16) {
+                    titulo
+                    propriedades
+                    if !rotina.ativa {
+                        avisoPausada
                     }
-
-                    ProgressView(value: progresso)
-                        .tint(AppTheme.primary)
-                        .padding(.top, 8)
+                    Divider()
+                    checklist
                 }
-                .padding(.horizontal)
-                .padding(.top, 8)
-
-                if !rotina.ativa {
-                    avisoPausada
-                }
-
-                // Grid de tarefas
-                if viewModel.tarefas.count > 1 {
-                    HStack {
-                        Text("Tarefas")
-                            .font(.headline)
-                        Spacer()
-                        Button("Organizar") { mostrarOrganizar = true }
-                            .font(.subheadline)
-                    }
-                    .padding(.horizontal)
-                }
-
-                LazyVGrid(columns: colunas, spacing: 14) {
-                    ForEach(viewModel.tarefas) { tarefa in
-                        TarefaCard(tarefa: tarefa) {
-                            toquesEmTarefas += 1
-                            if viewModel.alternarConcluida(tarefa) {
-                                comemorar()
-                            }
-                        }
-                        .contextMenu {
-                            Button {
-                                nomeEditado = tarefa.nome
-                                notaEditada = tarefa.nota
-                                tarefaParaEditar = tarefa
-                            } label: {
-                                Label("Editar", systemImage: "pencil")
-                            }
-                            Button(role: .destructive) {
-                                viewModel.excluir(tarefa)
-                            } label: {
-                                Label("Excluir tarefa", systemImage: "trash")
-                            }
-                        }
-                    }
-                }
-                .padding(.horizontal)
-
-                if viewModel.tarefas.isEmpty {
-                    Text("Nenhuma tarefa ainda. Toque em + pra adicionar.")
-                        .foregroundColor(.secondary)
-                        .font(.subheadline)
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, 40)
-                }
-
-                if mostrarCampoNovaTarefa {
-                    VStack(spacing: 8) {
-                        HStack {
-                            TextField("Nome da tarefa", text: $novaTarefaNome)
-                                .textFieldStyle(.roundedBorder)
-                            Button("Adicionar") {
-                                guard !novaTarefaNome.isEmpty else { return }
-                                viewModel.adicionar(nome: novaTarefaNome, nota: novaTarefaNota)
-                                novaTarefaNome = ""
-                                novaTarefaNota = ""
-                                mostrarCampoNovaTarefa = false
-                            }
-                        }
-                        TextField("Nota (opcional), ex.: 30 min", text: $novaTarefaNota)
-                            .textFieldStyle(.roundedBorder)
-                            .font(.subheadline)
-                    }
-                    .padding(.horizontal)
-                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 32)
             }
         }
+        .ignoresSafeArea(edges: .top)
         .overlay {
             if mostrarComemoracao {
                 ComemoracaoView(frequencia: rotina.frequencia)
@@ -135,24 +62,39 @@ struct DetalheRotinaView: View {
         }
         .sensoryFeedback(.selection, trigger: toquesEmTarefas)
         .sensoryFeedback(.success, trigger: conclusoes)
-        .navigationTitle("Detalhes")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                HStack {
-                    NavigationLink(destination: EstatisticasView(rotina: rotina)) {
-                        Image(systemName: "chart.bar.fill")
+            ToolbarItemGroup(placement: .navigationBarTrailing) {
+                Button { mostrarEstatisticas = true } label: {
+                    Image(systemName: "chart.bar.fill")
+                }
+                .accessibilityLabel("Estatísticas")
+                Menu {
+                    Button { mostrarEdicao = true } label: {
+                        Label("Editar rotina", systemImage: "pencil")
                     }
-                    NavigationLink(destination: EditarRotinaView(viewModel: RotinaViewModel(), rotina: rotina)) {
-                        Image(systemName: "pencil")
+                    if viewModel.tarefas.count > 1 {
+                        Button { mostrarOrganizar = true } label: {
+                            Label("Organizar tarefas", systemImage: "arrow.up.arrow.down")
+                        }
                     }
-                    Button {
-                        mostrarCampoNovaTarefa.toggle()
-                    } label: {
-                        Image(systemName: "plus")
+                    Button { alternarPausa() } label: {
+                        if rotina.ativa {
+                            Label("Pausar rotina", systemImage: "pause.circle")
+                        } else {
+                            Label("Retomar rotina", systemImage: "play.circle")
+                        }
                     }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
                 }
             }
+        }
+        .navigationDestination(isPresented: $mostrarEstatisticas) {
+            EstatisticasView(rotina: rotina)
+        }
+        .navigationDestination(isPresented: $mostrarEdicao) {
+            EditarRotinaView(viewModel: RotinaViewModel(), rotina: rotina)
         }
         .alert("Editar tarefa", isPresented: Binding(
             get: { tarefaParaEditar != nil },
@@ -180,14 +122,197 @@ struct DetalheRotinaView: View {
         }
     }
 
+    // MARK: - Cabeçalho
+
+    private var capa: some View {
+        Rectangle()
+            .fill(cor.opacity(0.22))
+            .frame(height: 150)
+            .overlay(alignment: .bottomLeading) {
+                Text(rotina.iconeExibido)
+                    .font(.system(size: 52))
+                    .padding(.leading, 20)
+                    .offset(y: 28)
+            }
+    }
+
+    private var titulo: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(rotina.nome)
+                .font(.largeTitle.bold())
+            if !rotina.descricao.isEmpty {
+                Text(rotina.descricao)
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.top, 36)
+    }
+
+    // Propriedades em linhas, como numa página do Notion
+    private var propriedades: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            propriedade("Frequência", icone: "repeat") {
+                Text(rotina.frequencia)
+            }
+            propriedade("Categoria", icone: "tag") {
+                if let categoria {
+                    CategoriaTag(categoria: categoria)
+                } else {
+                    Text("Vazio").foregroundStyle(.tertiary)
+                }
+            }
+            propriedade("Lembrete", icone: "bell") {
+                Text(textoLembrete).foregroundStyle(rotina.lembreteAtivo ? .primary : .tertiary)
+            }
+            propriedade("Sequência", icone: "flame") {
+                Text("\(sequencia) seguidas") + Text("  ·  recorde \(recorde)").foregroundColor(.secondary)
+            }
+            propriedade("Progresso", icone: "circle.dashed") {
+                HStack(spacing: 8) {
+                    ProgressView(value: viewModel.tarefas.isEmpty ? 0 : Double(concluidas) / Double(viewModel.tarefas.count))
+                        .tint(cor)
+                        .frame(width: 90)
+                    Text("\(concluidas)/\(viewModel.tarefas.count)")
+                        .font(.subheadline.monospacedDigit())
+                }
+            }
+        }
+        .font(.subheadline)
+    }
+
+    private func propriedade<Valor: View>(_ nome: String, icone: String, @ViewBuilder valor: () -> Valor) -> some View {
+        HStack(alignment: .center, spacing: 0) {
+            // Ícone com largura fixa pra os nomes ficarem alinhados, como numa tabela
+            HStack(spacing: 8) {
+                Image(systemName: icone).frame(width: 20)
+                Text(nome)
+            }
+            .foregroundStyle(.secondary)
+            .frame(width: 130, alignment: .leading)
+            valor()
+            Spacer(minLength: 0)
+        }
+    }
+
+    private var textoLembrete: String {
+        guard rotina.lembreteAtivo, !rotina.horarioLembrete.isEmpty else { return "Desligado" }
+        let dias = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"]
+        switch rotina.frequencia {
+        case "Semanal":
+            let dia = dias[max(0, min(rotina.diaLembrete - 1, 6))]
+            return "\(dia.capitalized) às \(rotina.horarioLembrete)"
+        case "Mensal":
+            return "Dia \(rotina.diaLembrete) às \(rotina.horarioLembrete)"
+        default:
+            return "Todo dia às \(rotina.horarioLembrete)"
+        }
+    }
+
+    // MARK: - Checklist
+
+    private var checklist: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            ForEach(viewModel.tarefas) { tarefa in
+                LinhaTarefa(tarefa: tarefa, cor: cor) {
+                    toquesEmTarefas += 1
+                    if viewModel.alternarConcluida(tarefa) {
+                        comemorar()
+                    }
+                }
+                .contextMenu {
+                    Button {
+                        nomeEditado = tarefa.nome
+                        notaEditada = tarefa.nota
+                        tarefaParaEditar = tarefa
+                    } label: {
+                        Label("Editar", systemImage: "pencil")
+                    }
+                    Button(role: .destructive) {
+                        viewModel.excluir(tarefa)
+                    } label: {
+                        Label("Excluir tarefa", systemImage: "trash")
+                    }
+                }
+            }
+            novaTarefa
+        }
+    }
+
+    // "+ Nova tarefa" no fim da lista, que vira os campos de nome e nota
+    @ViewBuilder
+    private var novaTarefa: some View {
+        if mostrarCampoNovaTarefa {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 12) {
+                    Image(systemName: "square")
+                        .font(.title3)
+                        .foregroundStyle(.tertiary)
+                    TextField("Nome da tarefa", text: $novaTarefaNome)
+                        .focused($focoNovaTarefa)
+                        .submitLabel(.done)
+                        .onSubmit(adicionarTarefa)
+                }
+                TextField("Nota (opcional), ex.: 30 min", text: $novaTarefaNota)
+                    .font(.subheadline)
+                    .padding(.leading, 36)
+                HStack {
+                    Spacer()
+                    Button("Cancelar") {
+                        mostrarCampoNovaTarefa = false
+                        novaTarefaNome = ""
+                        novaTarefaNota = ""
+                    }
+                    Button("Adicionar", action: adicionarTarefa)
+                        .buttonStyle(.borderedProminent)
+                        .tint(cor)
+                        .disabled(novaTarefaNome.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+                .font(.subheadline)
+            }
+            .padding(.vertical, 8)
+        } else {
+            Button {
+                mostrarCampoNovaTarefa = true
+                focoNovaTarefa = true
+            } label: {
+                Label(viewModel.tarefas.isEmpty ? "Adicione a primeira tarefa" : "Nova tarefa", systemImage: "plus")
+                    .foregroundStyle(.secondary)
+                    .padding(.vertical, 10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private func adicionarTarefa() {
+        let nome = novaTarefaNome.trimmingCharacters(in: .whitespaces)
+        guard !nome.isEmpty else { return }
+        viewModel.adicionar(nome: nome, nota: novaTarefaNota)
+        novaTarefaNome = ""
+        novaTarefaNota = ""
+        // Continua no campo, pra adicionar várias seguidas como numa lista do Notion
+        focoNovaTarefa = true
+        recarregarSequencia()
+    }
+
+    // MARK: - Ações
+
     // Mostra o selo de rotina completa por ~2s, com vibração de sucesso
     private func comemorar() {
         conclusoes += 1
+        recarregarSequencia()
         withAnimation { mostrarComemoracao = true }
         Task {
             try? await Task.sleep(for: .seconds(2))
             withAnimation { mostrarComemoracao = false }
         }
+    }
+
+    private func alternarPausa() {
+        RotinaViewModel().alternarPausa(rotina)
+        recarregarRotina()
     }
 
     // Aviso de rotina pausada, com botão pra retomar
@@ -199,31 +324,72 @@ struct DetalheRotinaView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Rotina pausada")
                     .font(.subheadline.bold())
-                Text("Sem lembretes, e os períodos pausados não quebram o seu streak.")
+                Text("Sem lembretes, e os períodos pausados não quebram a sua sequência.")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
             Spacer()
-            Button("Retomar") {
-                RotinaViewModel().alternarPausa(rotina)
-                recarregarRotina()
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(AppTheme.primary)
-            .controlSize(.small)
+            Button("Retomar", action: alternarPausa)
+                .buttonStyle(.borderedProminent)
+                .tint(cor)
+                .controlSize(.small)
         }
         .padding(14)
         .background(RoundedRectangle(cornerRadius: 14).fill(Color.orange.opacity(0.12)))
-        .padding(.horizontal)
     }
 
-    // Busca a versão salva da rotina (pode ter sido editada) e a categoria dela
+    // Busca a versão salva da rotina (pode ter sido editada), a categoria e a sequência
     private func recarregarRotina() {
         if let id = rotina.id, let salva = RotinaDAO().buscar(id: id) {
             rotina = salva
         }
         viewModel.frequencia = rotina.frequencia
         categoria = CategoriaDAO().listarTodas().first { $0.id == rotina.categoriaId }
+        recarregarSequencia()
+    }
+
+    private func recarregarSequencia() {
+        guard let id = rotina.id else { return }
+        let estatisticas = EstatisticasViewModel(rotinaId: id, frequencia: rotina.frequencia)
+        estatisticas.carregar()
+        sequencia = estatisticas.streakAtual
+        recorde = estatisticas.recorde
+    }
+}
+
+// MARK: - Linha da checklist
+
+struct LinhaTarefa: View {
+    let tarefa: Tarefa
+    let cor: Color
+    let aoTocar: () -> Void
+
+    var body: some View {
+        Button(action: aoTocar) {
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                Image(systemName: tarefa.concluidaHoje ? "checkmark.square.fill" : "square")
+                    .font(.title3)
+                    .foregroundStyle(tarefa.concluidaHoje ? cor : .secondary)
+                    .contentTransition(.symbolEffect(.replace))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(tarefa.nome)
+                        .foregroundStyle(tarefa.concluidaHoje ? .secondary : .primary)
+                        .strikethrough(tarefa.concluidaHoje)
+                        .multilineTextAlignment(.leading)
+                    if !tarefa.nota.isEmpty {
+                        Text(tarefa.nota)
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                            .multilineTextAlignment(.leading)
+                    }
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.vertical, 8)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(tarefa.concluidaHoje ? .isSelected : [])
     }
 }
 
@@ -261,44 +427,5 @@ struct OrganizarTarefasView: View {
                 }
             }
         }
-    }
-}
-
-// MARK: - Card de tarefa (Checkbox + ImageView minimalista)
-struct TarefaCard: View {
-    let tarefa: Tarefa
-    let aoTocar: () -> Void
-
-    var body: some View {
-        Button(action: aoTocar) {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Image(systemName: tarefa.concluidaHoje ? "checkmark.circle.fill" : "circle")
-                        .font(.title2)
-                        .foregroundColor(tarefa.concluidaHoje ? AppTheme.primary : .secondary)
-                    Spacer()
-                }
-                Text(tarefa.nome)
-                    .font(.subheadline.weight(.medium))
-                    .foregroundColor(tarefa.concluidaHoje ? .secondary : .primary)
-                    .strikethrough(tarefa.concluidaHoje)
-                    .multilineTextAlignment(.leading)
-                if !tarefa.nota.isEmpty {
-                    Text(tarefa.nota)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.leading)
-                }
-            }
-            .padding(14)
-            .frame(maxWidth: .infinity, minHeight: 90, alignment: .topLeading)
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(tarefa.concluidaHoje ? AppTheme.primarySoft : AppTheme.cardBackground)
-            )
-            
-        }
-        .buttonStyle(.plain)
     }
 }

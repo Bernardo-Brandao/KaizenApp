@@ -146,67 +146,71 @@ struct KaizenWidgetView: View {
               systemImage: "checklist")
     }
 
+    // Fração de tarefas feitas nas rotinas de uma frequência (anéis: hoje, semana, mês)
+    private func fracao(_ frequencia: String) -> Double {
+        let daFrequencia = rotinas.filter { $0.frequencia == frequencia }
+        let total = daFrequencia.reduce(0) { $0 + $1.total }
+        guard total > 0 else { return 0 }
+        return Double(daFrequencia.reduce(0) { $0 + $1.concluidas(em: entrada.date) }) / Double(total)
+    }
+
+    private func aneis(tamanho: CGFloat) -> some View {
+        AneisAtividade(hoje: fracao("Diária"), semana: fracao("Semanal"), mes: fracao("Mensal"),
+                       tamanho: tamanho, animado: false)
+    }
+
+    // Pequeno: os três anéis do Resumo e quantas rotinas estão completas
     private var resumoGeral: some View {
-        VStack(spacing: 8) {
-            ZStack {
-                Anel(progresso: Double(completas) / Double(rotinas.count), cor: CoresWidget.primaria, espessura: 8)
-                if completas == rotinas.count {
-                    Image(systemName: "checkmark")
-                        .font(.title3.bold())
-                        .foregroundStyle(CoresWidget.primaria)
-                } else {
-                    Text("\(completas)/\(rotinas.count)")
-                        .font(.title3.bold().monospacedDigit())
-                }
-            }
-            .frame(width: 70, height: 70)
-            Text(completas == 1 ? "rotina completa" : "rotinas completas")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+        VStack(spacing: 6) {
+            aneis(tamanho: 104)
+            Text(completas == rotinas.count ? "Tudo feito!" : "\(completas) de \(rotinas.count) rotinas")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(completas == rotinas.count ? CoresAneis.hoje : .secondary)
         }
     }
 
+    // Médio: anéis à esquerda e as rotinas (com emoji) à direita
     private var lista: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            ForEach(rotinas.prefix(4)) { rotina in
-                let concluidas = rotina.concluidas(em: entrada.date)
-                let cor = rotina.corHex.map(CoresWidget.hex) ?? CoresWidget.primaria
-                Link(destination: LinkKaizen.rotina(rotina.id)) {
-                HStack(spacing: 8) {
-                    Anel(progresso: Double(concluidas) / Double(rotina.total), cor: cor, espessura: 3)
-                        .frame(width: 18, height: 18)
-                    Text(rotina.nome)
-                        .font(.subheadline)
-                        .lineLimit(1)
-                    Spacer()
-                    Text("\(concluidas)/\(rotina.total)")
-                        .font(.caption.monospacedDigit())
+        HStack(spacing: 16) {
+            aneis(tamanho: 112)
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(rotinas.prefix(3)) { rotina in
+                    let concluidas = rotina.concluidas(em: entrada.date)
+                    let cor = rotina.corHex.map(CoresWidget.hex) ?? cor(daFrequencia: rotina.frequencia)
+                    Link(destination: LinkKaizen.rotina(rotina.id)) {
+                        HStack(spacing: 6) {
+                            Text(rotina.icone.isEmpty ? "📋" : rotina.icone)
+                                .font(.subheadline)
+                            Text(rotina.nome)
+                                .font(.subheadline.weight(.medium))
+                                .lineLimit(1)
+                            Spacer(minLength: 4)
+                            if rotina.completa(em: entrada.date) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundStyle(cor)
+                            } else {
+                                Text("\(concluidas)/\(rotina.total)")
+                                    .font(.caption.monospacedDigit())
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+                if rotinas.count > 3 {
+                    Text("+\(rotinas.count - 3) rotinas")
+                        .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
-                }
             }
-            if rotinas.count > 4 {
-                Text("+\(rotinas.count - 4) rotinas")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
-}
 
-private struct Anel: View {
-    let progresso: Double
-    let cor: Color
-    let espessura: CGFloat
-
-    var body: some View {
-        ZStack {
-            Circle().stroke(cor.opacity(0.2), lineWidth: espessura)
-            Circle()
-                .trim(from: 0, to: progresso)
-                .stroke(cor, style: StrokeStyle(lineWidth: espessura, lineCap: .round))
-                .rotationEffect(.degrees(-90))
+    private func cor(daFrequencia frequencia: String) -> Color {
+        switch frequencia {
+        case "Semanal": return CoresAneis.semana
+        case "Mensal": return CoresAneis.mes
+        default: return CoresAneis.hoje
         }
     }
 }

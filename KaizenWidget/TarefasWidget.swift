@@ -65,7 +65,8 @@ struct TarefasWidgetView: View {
 
         return VStack(alignment: .leading, spacing: 8) {
             Link(destination: LinkKaizen.rotina(rotina.id)) {
-                HStack {
+                HStack(spacing: 6) {
+                    Text(rotina.icone.isEmpty ? "📋" : rotina.icone)
                     Text(rotina.nome)
                         .font(.headline)
                         .lineLimit(1)

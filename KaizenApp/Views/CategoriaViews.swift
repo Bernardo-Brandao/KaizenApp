@@ -8,7 +8,6 @@ struct CategoriasView: View {
     let coresDisponiveis = ["007AFF", "34C759", "FF9500", "FF3B30", "AF52DE", "8E8E93"]
 
     var body: some View {
-        NavigationStack {
             List {
                 Section("Nova categoria") {
                     TextField("Nome da categoria", text: $novoNome)
@@ -52,7 +51,6 @@ struct CategoriasView: View {
             }
             .navigationTitle("Categorias")
             .onAppear { viewModel.carregar() }
-        }
     }
 }
 

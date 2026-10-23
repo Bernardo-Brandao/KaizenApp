@@ -25,6 +25,14 @@ struct AjustesView: View {
                     Text("O backup guarda rotinas, tarefas, categorias, histórico e pausas num arquivo. Importar substitui todos os dados atuais.")
                 }
 
+                Section("Organização") {
+                    NavigationLink {
+                        CategoriasView()
+                    } label: {
+                        Label("Categorias", systemImage: "tag")
+                    }
+                }
+
                 Section("Sobre") {
                     LabeledContent("Versão", value: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—")
                 }

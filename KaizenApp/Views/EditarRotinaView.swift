@@ -13,6 +13,7 @@ struct EditarRotinaView: View {
     @State private var horarioLembrete: Date
     @State private var categoriaId: Int64?
     @State private var diaLembrete: Int
+    @State private var icone: String
     @State private var mostrarConfirmacao = false
 
     let opcoesFrequencia = ["Diária", "Semanal", "Mensal"]
@@ -26,6 +27,7 @@ struct EditarRotinaView: View {
         _lembreteAtivo = State(initialValue: rotina.lembreteAtivo)
         _categoriaId = State(initialValue: rotina.categoriaId)
         _diaLembrete = State(initialValue: rotina.diaLembrete)
+        _icone = State(initialValue: rotina.icone)
 
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm"
@@ -39,7 +41,10 @@ struct EditarRotinaView: View {
     var body: some View {
         Form {
             Section("Informações da rotina") {
-                TextField("Nome da rotina", text: $nome)
+                HStack {
+                    CampoEmoji(icone: $icone)
+                    TextField("Nome da rotina", text: $nome)
+                }
                 TextField("Descrição", text: $descricao)
             }
 
@@ -82,6 +87,7 @@ struct EditarRotinaView: View {
         atualizada.lembreteAtivo = lembreteAtivo
         atualizada.categoriaId = categoriaId
         atualizada.diaLembrete = diaLembrete
+        atualizada.icone = icone
 
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm"
