@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		0C749C7030806D5C004DFAFB /* SQLite in Frameworks */ = {isa = PBXBuildFile; productRef = 0C749C6F30806D5C004DFAFB /* SQLite */; };
 		0CB2F0013080B0000000000E /* KaizenWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 0CB2F0013080B00000000001 /* KaizenWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		0CB2F0013080B00000000010 /* SQLite in Frameworks */ = {isa = PBXBuildFile; productRef = 0CB2F0013080B0000000000F /* SQLite */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -84,6 +85,7 @@
 		0CB2F0013080B00000000004 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
+				0CB2F0013080B00000000010 /* SQLite in Frameworks */,
 			);
 		};
 /* End PBXFrameworksBuildPhase section */
@@ -183,6 +185,9 @@
 				0CB2F0013080B00000000003 /* Compartilhado */,
 			);
 			name = KaizenWidgetExtension;
+			packageProductDependencies = (
+				0CB2F0013080B0000000000F /* SQLite */,
+			);
 			productName = KaizenWidgetExtension;
 			productReference = 0CB2F0013080B00000000001 /* KaizenWidgetExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
@@ -624,6 +629,11 @@
 
 /* Begin XCSwiftPackageProductDependency section */
 		0C749C6F30806D5C004DFAFB /* SQLite */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0C749C6E30806D5C004DFAFB /* XCRemoteSwiftPackageReference "SQLite.swift" */;
+			productName = SQLite;
+		};
+		0CB2F0013080B0000000000F /* SQLite */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 0C749C6E30806D5C004DFAFB /* XCRemoteSwiftPackageReference "SQLite.swift" */;
 			productName = SQLite;

@@ -7,14 +7,49 @@ class DatabaseManager {
 
     private init() {
         do {
-            let path = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-                .appendingPathComponent("kaizen.sqlite3").path
+            let path = Self.caminhoDoBanco()
             db = try Connection(path)
-            print("Banco criado em: \(path)")
+            // App e widget usam o mesmo arquivo; espera em vez de falhar se o outro estiver escrevendo
+            db?.busyTimeout = 5
+            print("Banco em: \(path)")
             Self.prepararEsquema(db)
         } catch {
             print("Erro ao conectar no banco: \(error)")
         }
+    }
+
+    // O banco fica no App Group pra o widget também acessar.
+    // Versões anteriores guardavam em Documentos: se o arquivo antigo existir, ele é movido pro grupo.
+    // Ele substitui um banco do grupo que já exista, porque esse só pode ter sido criado vazio pelo widget
+    // (o widget não enxerga Documentos do app e não cria rotinas). Depois de movido, não roda mais.
+    private static func caminhoDoBanco() -> String {
+        let arquivo = "kaizen.sqlite3"
+        let documentos = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        guard let grupo = AppGroup.pasta else {
+            return documentos.appendingPathComponent(arquivo).path
+        }
+
+        let antigo = documentos.appendingPathComponent(arquivo)
+        let novo = grupo.appendingPathComponent(arquivo)
+        let fm = FileManager.default
+        if fm.fileExists(atPath: antigo.path) {
+            // Arquivos do banco do grupo (vazio, criado pelo widget) saem antes
+            for sufixo in ["", "-wal", "-shm"] {
+                try? fm.removeItem(at: URL(fileURLWithPath: novo.path + sufixo))
+            }
+            do {
+                try fm.moveItem(at: antigo, to: novo)
+            } catch {
+                print("Erro ao mover o banco pro App Group: \(error)")
+                return antigo.path   // continua usando o antigo; tenta de novo na próxima abertura
+            }
+            // Arquivos auxiliares do SQLite vão junto quando existem
+            for sufixo in ["-wal", "-shm"] {
+                try? fm.moveItem(at: URL(fileURLWithPath: antigo.path + sufixo),
+                                 to: URL(fileURLWithPath: novo.path + sufixo))
+            }
+        }
+        return novo.path
     }
 
     // Banco temporário em memória, com o mesmo esquema — usado nos testes
