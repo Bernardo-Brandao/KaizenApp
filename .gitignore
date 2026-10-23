@@ -1,0 +1,10 @@
+# Preferências locais do Xcode (por usuário)
+xcuserdata/
+*.xcuserstate
+
+# Build
+DerivedData/
+build/
+
+# macOS
+.DS_Store
