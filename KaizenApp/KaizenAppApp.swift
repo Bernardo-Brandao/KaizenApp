@@ -19,6 +19,11 @@ struct KaizenAppApp: App {
                     .tabItem {
                         Label("Categorias", systemImage: "tag")
                     }
+
+                AjustesView()
+                    .tabItem {
+                        Label("Ajustes", systemImage: "gearshape")
+                    }
             }
             .tint(AppTheme.primary)
         }
