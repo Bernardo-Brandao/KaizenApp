@@ -22,4 +22,23 @@ enum ConclusaoTarefa {
         // Completar a rotina cancela o lembrete do período (lembrete inteligente)
         NotificationManager.shared.atualizarLembrete(rotinaId: rotinaId)
     }
+
+    // "Marcar tudo como feito" (botão da notificação): conclui as tarefas que faltam no período
+    static func concluirTodas(rotinaId: Int64) {
+        guard let rotina = RotinaDAO().buscar(id: rotinaId) else { return }
+        let dao = TarefaDAO()
+        for var tarefa in dao.listarPorRotina(rotinaId, frequencia: rotina.frequencia) where !tarefa.concluidaHoje {
+            tarefa.concluidaHoje = true
+            dao.atualizar(tarefa)
+        }
+
+        let tarefas = dao.listarPorRotina(rotinaId, frequencia: rotina.frequencia)
+        HistoricoDAO().registrarProgresso(
+            rotinaId: rotinaId,
+            frequencia: rotina.frequencia,
+            total: tarefas.count,
+            concluidas: tarefas.filter(\.concluidaHoje).count
+        )
+        NotificationManager.shared.atualizarLembrete(rotinaId: rotinaId)
+    }
 }

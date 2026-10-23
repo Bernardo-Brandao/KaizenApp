@@ -9,6 +9,21 @@ class NotificationManager {
     // notificações pendentes por app, então a janela é curta e é renovada a cada abertura.
     private static let ocorrenciasAgendadas = ["Diária": 7, "Semanal": 4, "Mensal": 3]
 
+    // Categoria do lembrete com os botões "Marcar tudo como feito" e "Adiar 1 hora".
+    // As ações são tratadas no app (NotificacaoDelegate).
+    static let categoriaLembrete = "LEMBRETE_ROTINA"
+    static let acaoConcluirTudo = "CONCLUIR_TUDO"
+    static let acaoAdiar = "ADIAR_1H"
+
+    func registrarCategorias() {
+        let concluir = UNNotificationAction(identifier: Self.acaoConcluirTudo, title: "Marcar tudo como feito",
+                                            icon: UNNotificationActionIcon(systemImageName: "checkmark.circle"))
+        let adiar = UNNotificationAction(identifier: Self.acaoAdiar, title: "Adiar 1 hora",
+                                         icon: UNNotificationActionIcon(systemImageName: "clock.arrow.circlepath"))
+        let categoria = UNNotificationCategory(identifier: Self.categoriaLembrete, actions: [concluir, adiar], intentIdentifiers: [])
+        UNUserNotificationCenter.current().setNotificationCategories([categoria])
+    }
+
     func solicitarPermissao() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { concedida, erro in
             if let erro = erro {
@@ -50,10 +65,7 @@ class NotificationManager {
         }
 
         let requests = datas.map { data -> UNNotificationRequest in
-            let content = UNMutableNotificationContent()
-            content.title = "Hora da sua rotina"
-            content.body = rotina.nome
-            content.sound = .default
+            let content = Self.conteudo(para: rotina)
 
             let componentes = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: data)
             let trigger = UNCalendarNotificationTrigger(dateMatching: componentes, repeats: false)
@@ -61,9 +73,13 @@ class NotificationManager {
             return UNNotificationRequest(identifier: identificador, content: content, trigger: trigger)
         }
 
-        // Remove os lembretes antigos dessa rotina antes de agendar os novos
+        // Remove os lembretes antigos dessa rotina antes de agendar os novos.
+        // Completou no período: o lembrete adiado também não precisa mais tocar.
         Task {
             await removerPendentes(rotinaId: rotinaId)
+            if completaNoPeriodo {
+                UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [Self.idAdiado(rotinaId)])
+            }
             for request in requests {
                 try? await UNUserNotificationCenter.current().add(request)
             }
@@ -87,6 +103,32 @@ class NotificationManager {
     func cancelarLembrete(para rotina: Rotina) {
         guard let rotinaId = rotina.id else { return }
         Task { await removerPendentes(rotinaId: rotinaId) }
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [Self.idAdiado(rotinaId)])
+    }
+
+    // "Adiar 1 hora": um lembrete avulso daqui a `segundos`, substituindo um adiamento anterior
+    func adiarLembrete(rotinaId: Int64, segundos: TimeInterval = 3600) {
+        guard let rotina = RotinaDAO().buscar(id: rotinaId) else { return }
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: segundos, repeats: false)
+        let request = UNNotificationRequest(identifier: Self.idAdiado(rotinaId), content: Self.conteudo(para: rotina), trigger: trigger)
+        UNUserNotificationCenter.current().add(request)
+    }
+
+    private static func conteudo(para rotina: Rotina) -> UNMutableNotificationContent {
+        let content = UNMutableNotificationContent()
+        content.title = "Hora da sua rotina"
+        content.body = rotina.nome
+        content.sound = .default
+        content.categoryIdentifier = categoriaLembrete
+        if let id = rotina.id {
+            content.userInfo = ["rotinaId": id]
+        }
+        return content
+    }
+
+    // Fora do prefixo "rotina-<id>-" de propósito: reagendar a série não apaga o adiamento
+    private static func idAdiado(_ rotinaId: Int64) -> String {
+        "adiado-rotina-\(rotinaId)"
     }
 
     private func removerPendentes(rotinaId: Int64) async {
