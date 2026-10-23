@@ -54,3 +54,32 @@ struct StreakTests {
         #expect(streak(["2026-09-27", "2026-09-20"], pausados: pausados, frequencia: "Semanal") == 2)
     }
 }
+
+// Períodos do mapa de calor ("hoje" = terça 2026-10-20)
+@MainActor
+struct MapaCalorTests {
+    let hoje = "2026-10-20"
+
+    @Test func diariaComecaNumDomingoETerminaHoje() {
+        let periodos = EstatisticasViewModel.periodosUltimoAno(frequencia: "Diária", hoje: hoje)
+        // 364 dias antes de 20/10/2026 é 21/10/2025 (terça); o domingo dessa semana é 19/10/2025
+        #expect(periodos.first == "2025-10-19")
+        #expect(periodos.last == hoje)
+        #expect(periodos.count == 367)
+        #expect(periodos == periodos.sorted())   // do mais antigo pro mais recente
+    }
+
+    @Test func semanal52Semanas() {
+        let periodos = EstatisticasViewModel.periodosUltimoAno(frequencia: "Semanal", hoje: hoje)
+        #expect(periodos.count == 52)
+        #expect(periodos.last == "2026-10-18")
+        #expect(periodos.first == "2025-10-26")
+    }
+
+    @Test func mensal12Meses() {
+        let periodos = EstatisticasViewModel.periodosUltimoAno(frequencia: "Mensal", hoje: hoje)
+        #expect(periodos.count == 12)
+        #expect(periodos.first == "2025-11-01")
+        #expect(periodos.last == "2026-10-01")
+    }
+}
