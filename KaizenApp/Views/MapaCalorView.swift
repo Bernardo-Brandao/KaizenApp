@@ -6,7 +6,7 @@ import SwiftUI
 struct MapaCalorView: View {
     let celulas: [CelulaMapa]
     let frequencia: String
-    var cor: Color = AppTheme.primary
+    var cor: Color = Paleta.destaque
 
     private let tamanho: CGFloat = 12
     private let espaco: CGFloat = 3

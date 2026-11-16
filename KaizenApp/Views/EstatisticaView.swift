@@ -1,5 +1,6 @@
 import SwiftUI
 
+// Tela de estatísticas de uma rotina: números principais, últimos 7 períodos e mapa de calor
 struct EstatisticasView: View {
     let rotina: Rotina
     @StateObject private var viewModel: EstatisticasViewModel
@@ -9,7 +10,7 @@ struct EstatisticasView: View {
         _viewModel = StateObject(wrappedValue: EstatisticasViewModel(rotinaId: rotina.id ?? 0, frequencia: rotina.frequencia, diasSemana: rotina.diasSemana))
     }
 
-    @State private var cor: Color = AppTheme.primary
+    @State private var cor: Color = Paleta.destaque
     private let colunas = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
 
     var body: some View {
@@ -25,15 +26,15 @@ struct EstatisticasView: View {
                 }
                 .padding(.top, 8)
 
-                // Cartões de destaque, estilo "Tendências" do Fitness
+                // Cartões com os números principais
                 LazyVGrid(columns: colunas, spacing: 12) {
-                    cartao("Sequência", icone: "flame.fill", corIcone: .orange,
+                    cartao("Sequência", icone: "flame.fill", corIcone: .secondary,
                            valor: "\(viewModel.streakAtual)", unidade: rotuloUnidade(viewModel.streakAtual))
-                    cartao("Recorde", icone: "trophy.fill", corIcone: .yellow,
+                    cartao("Recorde", icone: "trophy.fill", corIcone: .secondary,
                            valor: "\(viewModel.recorde)", unidade: rotuloUnidade(viewModel.recorde))
-                    cartao("Conclusão média", icone: "percent", corIcone: cor,
+                    cartao("Conclusão média", icone: "percent", corIcone: .secondary,
                            valor: "\(Int(viewModel.percentualMedio * 100))", unidade: "%")
-                    cartao("Completos", icone: "checkmark.seal.fill", corIcone: Estilo.corSemana,
+                    cartao("Completos", icone: "checkmark.seal.fill", corIcone: .secondary,
                            valor: "\(viewModel.periodosCompletos)", unidade: rotuloUnidade(viewModel.periodosCompletos))
                 }
 

@@ -1,5 +1,6 @@
 import SwiftUI
 
+// Formulário pra editar uma rotina já criada
 struct EditarRotinaView: View {
     @ObservedObject var viewModel: RotinaViewModel
     @Environment(\.dismiss) var dismiss
@@ -9,8 +10,6 @@ struct EditarRotinaView: View {
     @State private var nome: String
     @State private var descricao: String
     @State private var frequencia: String
-    @State private var lembreteAtivo: Bool
-    @State private var horarioLembrete: Date
     @State private var categoriaId: Int64?
     @State private var diaLembrete: Int
     @State private var icone: String
@@ -25,19 +24,10 @@ struct EditarRotinaView: View {
         _nome = State(initialValue: rotina.nome)
         _descricao = State(initialValue: rotina.descricao)
         _frequencia = State(initialValue: rotina.frequencia)
-        _lembreteAtivo = State(initialValue: rotina.lembreteAtivo)
         _categoriaId = State(initialValue: rotina.categoriaId)
         _diaLembrete = State(initialValue: rotina.diaLembrete)
         _icone = State(initialValue: rotina.icone)
         _diasSemana = State(initialValue: rotina.diasSemana)
-
-        let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm"
-        if let data = formatter.date(from: rotina.horarioLembrete) {
-            _horarioLembrete = State(initialValue: data)
-        } else {
-            _horarioLembrete = State(initialValue: Date())
-        }
     }
 
     var body: some View {
@@ -76,12 +66,7 @@ struct EditarRotinaView: View {
                 }
             }
 
-            LembreteSection(
-                frequencia: frequencia,
-                lembreteAtivo: $lembreteAtivo,
-                horario: $horarioLembrete,
-                dia: $diaLembrete
-            )
+            LembreteSection(frequencia: frequencia, dia: $diaLembrete)
 
             Section {
                 Button("Salvar alterações") {
@@ -101,15 +86,12 @@ struct EditarRotinaView: View {
         atualizada.nome = nome
         atualizada.descricao = descricao
         atualizada.frequencia = frequencia
-        atualizada.lembreteAtivo = lembreteAtivo
+        atualizada.lembreteAtivo = false   // os horários dos lembretes ficam em cada tarefa
         atualizada.categoriaId = categoriaId
         atualizada.diaLembrete = diaLembrete
         atualizada.icone = icone
         atualizada.diasSemana = frequencia == "Diária" ? diasSemana : []
-
-        let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm"
-        atualizada.horarioLembrete = lembreteAtivo ? formatter.string(from: horarioLembrete) : ""
+        atualizada.horarioLembrete = ""
 
         viewModel.atualizar(atualizada)
         mostrarConfirmacao = true

@@ -1,6 +1,7 @@
 import Foundation
 import Combine
 
+// Lista as categorias e permite criar, editar e excluir
 class CategoriaViewModel: ObservableObject {
     @Published var categorias: [Categoria] = []
     private let dao = CategoriaDAO()

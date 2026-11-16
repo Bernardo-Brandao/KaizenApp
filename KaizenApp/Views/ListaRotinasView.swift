@@ -1,5 +1,6 @@
 import SwiftUI
 
+// Aba Rotinas: todas as rotinas agrupadas por categoria, com o progresso de cada uma
 struct ListaRotinasView: View {
     @StateObject var viewModel = RotinaViewModel()
     @Binding var rotinaParaAbrir: Int64?            // pedido vindo de um link do widget
@@ -57,7 +58,7 @@ struct ListaRotinasView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                 } else if let id = rotina.id, let progresso = viewModel.progresso[id], progresso.total > 0 {
-                    ProgressoAnel(progresso: progresso,
+                    ProgressoCirculo(progresso: progresso,
                                   cor: Estilo.cor(categoriaHex: categoria(de: rotina)?.corHex, frequencia: rotina.frequencia))
                 }
             }
@@ -73,7 +74,7 @@ struct ListaRotinasView: View {
                     Label("Retomar", systemImage: "play.fill")
                 }
             }
-            .tint(rotina.ativa ? .orange : AppTheme.primary)
+            .tint(rotina.ativa ? .gray : Paleta.destaque)
         }
         .swipeActions(edge: .trailing) {
             Button(role: .destructive) {
@@ -196,30 +197,26 @@ struct ListaRotinasView: View {
     }
 }
 
-// Anel com o progresso do período atual e o "3/5" ao lado; vira um check quando completo
-struct ProgressoAnel: View {
+// O "3/5" e um círculo que vai enchendo; vira um check quando completo
+struct ProgressoCirculo: View {
     let progresso: ProgressoRotina
-    var cor: Color = AppTheme.primary
+    var cor: Color = Paleta.destaque
 
     var body: some View {
         HStack(spacing: 6) {
             Text("\(progresso.concluidas)/\(progresso.total)")
                 .font(.caption.monospacedDigit())
                 .foregroundColor(.secondary)
-            ZStack {
-                Circle()
-                    .stroke(cor.opacity(0.18), lineWidth: 4)
-                Circle()
-                    .trim(from: 0, to: progresso.percentual)
-                    .stroke(cor, style: StrokeStyle(lineWidth: 4, lineCap: .round))
-                    .rotationEffect(.degrees(-90))
+            Group {
                 if progresso.completo {
-                    Image(systemName: "checkmark")
-                        .font(.caption2.bold())
-                        .foregroundColor(cor)
+                    Image(systemName: "checkmark.circle.fill")
+                        .resizable()
+                        .foregroundStyle(cor)
+                } else {
+                    CirculoProgresso(progresso: progresso.percentual, cor: cor)
                 }
             }
-            .frame(width: 26, height: 26)
+            .frame(width: 20, height: 20)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(progresso.concluidas) de \(progresso.total) tarefas concluídas")

@@ -1,5 +1,6 @@
 import Foundation
 
+// Um registro do histórico: em um período, quantas tarefas a rotina tinha e quantas foram feitas
 struct HistoricoDia: Identifiable {
     var id: Int64?
     var rotinaId: Int64

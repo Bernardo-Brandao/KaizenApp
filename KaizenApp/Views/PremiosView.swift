@@ -1,6 +1,6 @@
 import SwiftUI
 
-// Aba Prêmios, no estilo dos prêmios do app Fitness: medalhas coloridas quando conquistadas,
+// Prêmios (aberto pelo Resumo): medalhas em destaque quando conquistadas,
 // cinza enquanto ainda não
 struct PremiosView: View {
     @StateObject private var viewModel = ResumoViewModel()
@@ -8,27 +8,25 @@ struct PremiosView: View {
     private let colunas = [GridItem(.adaptive(minimum: 100), spacing: 16)]
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 28) {
-                    resumo
-                    ForEach(Premio.Grupo.allCases, id: \.self) { grupo in
-                        VStack(alignment: .leading, spacing: 14) {
-                            Text(grupo.rawValue).font(.title3.bold())
-                            LazyVGrid(columns: colunas, spacing: 20) {
-                                ForEach(viewModel.premios.filter { $0.grupo == grupo }) { premio in
-                                    MedalhaView(premio: premio)
-                                }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 28) {
+                resumo
+                ForEach(Premio.Grupo.allCases, id: \.self) { grupo in
+                    VStack(alignment: .leading, spacing: 14) {
+                        Text(grupo.rawValue).font(.title3.bold())
+                        LazyVGrid(columns: colunas, spacing: 20) {
+                            ForEach(viewModel.premios.filter { $0.grupo == grupo }) { premio in
+                                MedalhaView(premio: premio)
                             }
                         }
                     }
                 }
-                .padding()
             }
-            .background(Color(.systemGroupedBackground))
-            .navigationTitle("Prêmios")
-            .onAppear { viewModel.carregar() }
+            .padding()
         }
+        .background(Color(.systemGroupedBackground))
+        .navigationTitle("Prêmios")
+        .onAppear { viewModel.carregar() }
     }
 
     private var resumo: some View {
@@ -43,15 +41,15 @@ struct PremiosView: View {
 struct MedalhaView: View {
     let premio: Premio
 
-    private var cor: Color { premio.grupo == .sequencia ? .orange : Estilo.corSemana }
+    private var cor: Color { Paleta.destaque }
 
     var body: some View {
         VStack(spacing: 8) {
             ZStack {
                 Circle()
-                    .fill(premio.conquistado ? cor.opacity(0.18) : Color(.tertiarySystemFill))
+                    .fill(premio.conquistado ? cor.opacity(0.12) : Color(.tertiarySystemFill))
                 Circle()
-                    .strokeBorder(premio.conquistado ? cor : Color(.quaternaryLabel), lineWidth: 3)
+                    .strokeBorder(premio.conquistado ? cor : Color(.quaternaryLabel), lineWidth: 1.5)
                 Image(systemName: premio.simbolo)
                     .font(.system(size: 30, weight: .semibold))
                     .foregroundStyle(premio.conquistado ? cor : Color(.tertiaryLabel))

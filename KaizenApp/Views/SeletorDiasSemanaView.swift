@@ -4,7 +4,7 @@ import SwiftUI
 // Não deixa desmarcar o último dia — sem nenhum dia, a rotina/tarefa nunca apareceria.
 struct SeletorDiasSemana: View {
     @Binding var dias: Set<Int>
-    var cor: Color = AppTheme.primary
+    var cor: Color = Paleta.destaque
 
     private var marcados: Set<Int> { dias.isEmpty ? DiasSemana.todos : dias }
 

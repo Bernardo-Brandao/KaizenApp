@@ -1,6 +1,6 @@
 import SwiftUI
 
-// "Sua semana", no estilo do resumo semanal do Fitness: a semana que terminou (domingo a sábado)
+// "Sua semana": como foi a semana que terminou (domingo a sábado)
 struct ResumoSemanalView: View {
     @StateObject private var viewModel = ResumoSemanalViewModel()
     private let colunas = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
@@ -26,35 +26,32 @@ struct ResumoSemanalView: View {
 
     private func conteudo(_ resumo: ResumoSemanal) -> some View {
         VStack(alignment: .leading, spacing: 20) {
-            // Anel grande com a taxa da semana
-            VStack(spacing: 12) {
+            // A taxa da semana em número grande, com uma barra fina
+            VStack(alignment: .leading, spacing: 12) {
                 Text(intervalo(resumo))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                ZStack {
-                    AnelProgresso(progresso: resumo.taxa, cor: CoresAneis.semana, espessura: 18)
-                        .frame(width: 170, height: 170)
-                    VStack(spacing: 0) {
-                        Text("\(Int((resumo.taxa * 100).rounded()))%").font(Estilo.numero(40))
-                        Text("concluído").font(.caption).foregroundStyle(.secondary)
-                    }
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text("\(Int((resumo.taxa * 100).rounded()))%").font(Estilo.numero(48))
+                    Text("concluído").font(.subheadline).foregroundStyle(.secondary)
                 }
+                BarraProgresso(progresso: resumo.taxa)
                 if let variacao = resumo.variacao {
                     comparacao(variacao)
                 }
             }
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(20)
             .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: Estilo.cantoCartao))
 
             LazyVGrid(columns: colunas, spacing: 12) {
-                cartao("Dias perfeitos", icone: "star.fill", cor: .yellow,
+                cartao("Dias perfeitos", icone: "star", cor: .secondary,
                        valor: "\(resumo.diasPerfeitos)", unidade: "de 7")
-                cartao("Tarefas feitas", icone: "checkmark.circle.fill", cor: CoresAneis.hoje,
+                cartao("Tarefas feitas", icone: "checkmark.circle", cor: .secondary,
                        valor: "\(resumo.tarefasFeitas)", unidade: "")
             }
             if let melhor = resumo.melhorDia {
-                cartao("Melhor dia", icone: "crown.fill", cor: .orange,
+                cartao("Melhor dia", icone: "crown", cor: .secondary,
                        valor: nomeDoDia(melhor), unidade: "")
             }
 
@@ -71,7 +68,7 @@ struct ResumoSemanalView: View {
                                 ForEach(Array(linha.dias.enumerated()), id: \.offset) { _, feito in
                                     if let feito {
                                         Circle()
-                                            .fill(feito ? CoresAneis.hoje : Color(.tertiarySystemFill))
+                                            .fill(feito ? Paleta.destaque : Paleta.trilha)
                                             .frame(width: 12, height: 12)
                                     } else {
                                         // Folga: só o contorno
@@ -87,7 +84,7 @@ struct ResumoSemanalView: View {
                             Label(linha.semanaCompleta ? "Completa" : "Incompleta",
                                   systemImage: linha.semanaCompleta ? "checkmark.circle.fill" : "circle")
                                 .font(.caption)
-                                .foregroundStyle(linha.semanaCompleta ? CoresAneis.semana : .secondary)
+                                .foregroundStyle(linha.semanaCompleta ? Paleta.destaque : .secondary)
                         }
                     }
                     .padding(.vertical, 8)
@@ -105,8 +102,8 @@ struct ResumoSemanalView: View {
     private func comparacao(_ variacao: Double) -> some View {
         let pontos = Int((variacao * 100).rounded())
         let (texto, icone, cor): (String, String, Color) = switch pontos {
-        case 1...: ("\(pontos) pontos acima da semana anterior", "arrow.up.right", CoresAneis.semana)
-        case ..<0: ("\(-pontos) pontos abaixo da semana anterior", "arrow.down.right", .orange)
+        case 1...: ("\(pontos) pontos acima da semana anterior", "arrow.up.right", Paleta.destaque)
+        case ..<0: ("\(-pontos) pontos abaixo da semana anterior", "arrow.down.right", .secondary)
         default: ("Igual à semana anterior", "equal", .secondary)
         }
         return Label(texto, systemImage: icone)
@@ -117,7 +114,7 @@ struct ResumoSemanalView: View {
     private func cartao(_ titulo: String, icone: String, cor: Color, valor: String, unidade: String) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Label(titulo, systemImage: icone)
-                .font(.subheadline.weight(.semibold))
+                .font(.subheadline)
                 .foregroundStyle(cor)
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Text(valor).font(Estilo.numero(28))

@@ -49,15 +49,14 @@ struct ResumoTests {
 
     // MARK: - Semana
 
-    @Test func semanaVaiDeDomingoASabado() {
+    @Test func ultimosSeteDiasTerminamHoje() {
         let historico = [HistoricoDia(id: 1, rotinaId: 1, data: "2026-10-19", totalTarefas: 4, tarefasConcluidas: 2)]
-        let semana = ResumoViewModel.semanaAtual(historicoDiario: historico, hoje: hoje)
-        #expect(semana.map(\.data) == ["2026-10-18", "2026-10-19", "2026-10-20", "2026-10-21",
-                                       "2026-10-22", "2026-10-23", "2026-10-24"])
-        #expect(semana[1].progresso == 0.5)
-        #expect(semana[0].progresso == nil)          // sem registro
-        #expect(semana[2].ehHoje)
-        #expect(semana[3].futuro && !semana[2].futuro)
+        let dias = ResumoViewModel.ultimosDias(historicoDiario: historico, hoje: hoje)
+        #expect(dias.map(\.data) == ["2026-10-14", "2026-10-15", "2026-10-16", "2026-10-17",
+                                      "2026-10-18", "2026-10-19", "2026-10-20"])
+        #expect(dias[5].progresso == 0.5)
+        #expect(dias[0].progresso == nil)            // sem registro
+        #expect(dias[6].ehHoje && !dias[5].ehHoje)
     }
 
     // MARK: - Prêmios

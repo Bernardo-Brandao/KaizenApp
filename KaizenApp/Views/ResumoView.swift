@@ -1,6 +1,6 @@
 import SwiftUI
 
-// Aba inicial, no estilo do app Fitness: três anéis (hoje, semana, mês), a semana em mini-anéis,
+// Aba inicial: o progresso de hoje com um gráfico dos últimos 7 dias,
 // as rotinas do período e os cartões de sequência e prêmios
 struct ResumoView: View {
     @StateObject private var viewModel = ResumoViewModel()
@@ -15,8 +15,7 @@ struct ResumoView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     cabecalho
-                    aneis
-                    semana
+                    painelHoje
                     rotinasDoPeriodo
                     cartoes
                     cartaoSemana
@@ -59,57 +58,53 @@ struct ResumoView: View {
         .padding(.top, 8)
     }
 
-    private var aneis: some View {
-        HStack(spacing: 24) {
-            AneisAtividade(hoje: viewModel.fracao("Diária"),
-                           semana: viewModel.fracao("Semanal"),
-                           mes: viewModel.fracao("Mensal"),
-                           tamanho: 150)
-            VStack(alignment: .leading, spacing: 10) {
-                legendaAnel("Hoje", frequencia: "Diária", cor: Estilo.corHoje)
-                legendaAnel("Semana", frequencia: "Semanal", cor: Estilo.corSemana)
-                legendaAnel("Mês", frequencia: "Mensal", cor: Estilo.corMes)
+    // Quanto já foi feito hoje e, embaixo, como foram os últimos 7 dias
+    private var painelHoje: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Hoje")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    if let hoje = ResumoViewModel.progresso(viewModel.rotinas, frequencia: "Diária") {
+                        HStack(alignment: .firstTextBaseline, spacing: 6) {
+                            Text("\(hoje.feitas)").font(Estilo.numero(40))
+                            Text("de \(hoje.total) tarefas")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                    } else {
+                        Text("Nada para hoje")
+                            .font(.title3.weight(.semibold))
+                            .padding(.vertical, 6)
+                    }
+                }
+                Spacer()
+                if let hoje = ResumoViewModel.progresso(viewModel.rotinas, frequencia: "Diária"), hoje.total > 0 {
+                    Text("\(hoje.feitas * 100 / hoje.total)%")
+                        .font(.title3.weight(.semibold).monospacedDigit())
+                        .foregroundStyle(hoje.feitas == hoje.total ? Paleta.destaque : .secondary)
+                }
             }
-            Spacer(minLength: 0)
+
+            GraficoDias(dias: viewModel.semana, cor: Paleta.destaque)
+
+            // Rotinas semanais e mensais numa linha discreta, só se existirem
+            if !outrosPeriodos.isEmpty {
+                Text(outrosPeriodos)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
         }
         .padding(20)
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: Estilo.cantoCartao))
     }
 
-    private func legendaAnel(_ titulo: String, frequencia: String, cor: Color) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(titulo)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(cor)
-            if let p = ResumoViewModel.progresso(viewModel.rotinas, frequencia: frequencia) {
-                HStack(alignment: .firstTextBaseline, spacing: 3) {
-                    Text("\(p.feitas)/\(p.total)").font(Estilo.numero(22))
-                    Text("tarefas").font(.caption).foregroundStyle(.secondary)
-                }
-            } else {
-                Text("—").font(Estilo.numero(22)).foregroundStyle(.tertiary)
-            }
+    private var outrosPeriodos: String {
+        [("Semana", "Semanal"), ("Mês", "Mensal")].compactMap { titulo, frequencia in
+            ResumoViewModel.progresso(viewModel.rotinas, frequencia: frequencia).map { "\(titulo) \($0.feitas) de \($0.total)" }
         }
-    }
-
-    private var semana: some View {
-        HStack {
-            ForEach(viewModel.semana) { dia in
-                VStack(spacing: 6) {
-                    Text(inicialDoDia(dia.data))
-                        .font(.caption2.weight(dia.ehHoje ? .bold : .regular))
-                        .foregroundStyle(dia.ehHoje ? .primary : .secondary)
-                    AnelProgresso(progresso: dia.futuro ? 0 : (dia.progresso ?? 0),
-                                  cor: Estilo.corHoje, espessura: 4)
-                        .frame(width: 30, height: 30)
-                        .opacity(dia.futuro ? 0.35 : 1)
-                }
-                .frame(maxWidth: .infinity)
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(dia.futuro ? "\(dia.data): ainda não chegou"
-                                    : "\(dia.data): \(Int((dia.progresso ?? 0) * 100))%")
-            }
-        }
+        .joined(separator: "  ·  ")
     }
 
     @ViewBuilder
@@ -182,8 +177,8 @@ struct ResumoView: View {
                     .font(.title2)
                     .foregroundStyle(cor)
             } else if rotina.total > 0 {
-                AnelProgresso(progresso: Double(feitas) / Double(rotina.total), cor: cor, espessura: 4)
-                    .frame(width: 28, height: 28)
+                CirculoProgresso(progresso: Double(feitas) / Double(rotina.total), cor: cor)
+                    .frame(width: 22, height: 22)
             }
             Image(systemName: "chevron.right")
                 .font(.caption.weight(.semibold))
@@ -194,18 +189,26 @@ struct ResumoView: View {
         .contentShape(Rectangle())
     }
 
+    // Sequência e prêmios lado a lado num cartão só, sem cor
     private var cartoes: some View {
-        HStack(spacing: 12) {
-            cartao(titulo: "Sequência", icone: "flame.fill", cor: .orange,
+        HStack(spacing: 0) {
+            numero(titulo: "Sequência", icone: "flame",
                    valor: "\(viewModel.melhorSequenciaAtual)",
                    unidade: viewModel.melhorSequenciaAtual == 1 ? "seguida" : "seguidas")
-            Button { abaSelecionada = .premios } label: {
-                cartao(titulo: "Prêmios", icone: "trophy.fill", cor: .yellow,
+            Divider().padding(.vertical, 4)
+            NavigationLink {
+                PremiosView()
+            } label: {
+                numero(titulo: "Prêmios", icone: "trophy",
                        valor: "\(viewModel.premiosConquistados)",
                        unidade: "de \(viewModel.premios.count)")
+                    .padding(.leading, 16)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
         }
+        .padding(16)
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: Estilo.cantoCartao))
     }
 
     private var cartaoSemana: some View {
@@ -213,7 +216,7 @@ struct ResumoView: View {
             HStack(spacing: 14) {
                 Image(systemName: "calendar")
                     .font(.title2)
-                    .foregroundStyle(CoresAneis.semana)
+                    .foregroundStyle(.secondary)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Sua semana").font(.headline)
                     Text("Veja como foi a semana passada")
@@ -232,19 +235,17 @@ struct ResumoView: View {
         .buttonStyle(.plain)
     }
 
-    private func cartao(titulo: String, icone: String, cor: Color, valor: String, unidade: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+    private func numero(titulo: String, icone: String, valor: String, unidade: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
             Label(titulo, systemImage: icone)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(cor)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
             HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(valor).font(Estilo.numero(30))
+                Text(valor).font(Estilo.numero(28))
                 Text(unidade).font(.subheadline).foregroundStyle(.secondary)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: Estilo.cantoCartao))
     }
 
     // "Quinta-feira, 22 de outubro" — só a primeira letra maiúscula
@@ -252,8 +253,40 @@ struct ResumoView: View {
         let texto = Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "pt_BR")))
         return texto.prefix(1).uppercased() + texto.dropFirst()
     }
+}
 
-    private func inicialDoDia(_ dia: String) -> String {
+// Colunas dos últimos 7 dias: a altura é a parte das tarefas diárias feitas no dia, hoje em destaque
+struct GraficoDias: View {
+    let dias: [DiaSemana]
+    var cor: Color
+    var altura: CGFloat = 72
+
+    var body: some View {
+        HStack(alignment: .bottom, spacing: 0) {
+            ForEach(dias) { dia in
+                VStack(spacing: 6) {
+                    ZStack(alignment: .bottom) {
+                        Capsule().fill(Paleta.trilha)
+                        if let progresso = dia.progresso, progresso > 0 {
+                            Capsule()
+                                .fill(cor.opacity(dia.ehHoje ? 1 : 0.45))
+                                .frame(height: max(altura * progresso, 8))
+                        }
+                    }
+                    .animation(.easeOut(duration: 0.4), value: dia.progresso)
+                    .frame(width: 14, height: altura)
+                    Text(Self.inicial(dia.data))
+                        .font(.caption2.weight(dia.ehHoje ? .bold : .regular))
+                        .foregroundStyle(dia.ehHoje ? .primary : .secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("\(dia.data): \(dia.progresso.map { "\(Int($0 * 100))%" } ?? "sem registro")")
+            }
+        }
+    }
+
+    private static func inicial(_ dia: String) -> String {
         guard let data = DataUtil.data(de: dia) else { return "" }
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "pt_BR")

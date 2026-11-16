@@ -17,11 +17,15 @@ struct BackupTests {
                       horarioLembrete: "", lembreteAtivo: false, categoriaId: nil, diaLembrete: 7, icone: "", diasSemana: ""),
             ],
             tarefas: [
-                .init(id: 100, rotinaId: 10, nome: "Água", ordem: 0, dataConclusao: "2026-10-20", nota: "2 litros", diasSemana: "6"),
-                .init(id: 101, rotinaId: 10, nome: "Alongar", ordem: 1, dataConclusao: "", nota: "", diasSemana: ""),
+                .init(id: 100, rotinaId: 10, nome: "Água", ordem: 0, dataConclusao: "2026-10-20", nota: "2 litros", diasSemana: "6", horario: "07:30",
+                      tipo: "valor", unidade: "L", meta: 2, saude: "agua"),
+                .init(id: 101, rotinaId: 10, nome: "Alongar", ordem: 1, dataConclusao: "", nota: "", diasSemana: "", horario: "", tipo: "check", unidade: "", meta: nil, saude: ""),
             ],
             historico: [.init(id: 1, rotinaId: 10, data: "2026-10-19", totalTarefas: 2, tarefasConcluidas: 2)],
-            pausas: [.init(id: 1, rotinaId: 11, inicio: "2026-10-15", fim: "")]
+            pausas: [.init(id: 1, rotinaId: 11, inicio: "2026-10-15", fim: "")],
+            registrosTarefa: [.init(tarefaId: 100, data: "2026-10-20", valor: 1.5)],
+            pulos: [.init(rotinaId: 10, periodo: "2026-10-21")],
+            conclusoes: [.init(tarefaId: 100, periodo: "2026-10-20")]
         )
     }
 
@@ -36,7 +40,10 @@ struct BackupTests {
         #expect(exportado.rotinas == original.rotinas)
         #expect(exportado.tarefas == original.tarefas)
         #expect(exportado.historico == original.historico)
+        #expect(exportado.pulos == original.pulos)
+        #expect(exportado.conclusoes == original.conclusoes)
         #expect(exportado.pausas == original.pausas)
+        #expect(exportado.registrosTarefa == original.registrosTarefa)
     }
 
     @Test func restaurarSubstituiOsDadosAnteriores() throws {

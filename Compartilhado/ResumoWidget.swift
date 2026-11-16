@@ -10,13 +10,15 @@ struct ResumoRotina: Identifiable {
     let validoAte: Date      // início do próximo período — dali em diante o progresso zera
     var frequencia: String = "Diária"
     var icone: String = ""   // emoji da rotina (vazio = sem emoji)
-    var programadaHoje = true  // false = dia de folga de uma rotina diária com dias escolhidos
+    var programadaHoje = true  // false = dia de folga (rotina diária com dias escolhidos) ou período pulado
 
     var total: Int { tarefas.count }
 
-    // Progresso considerando que o período pode virar entre uma atualização do widget e outra
+    // Progresso considerando que o período pode virar entre uma atualização do widget e outra.
+    // Obs.: comparo datas só com "<". O ">=" e o "<=" de Date não existem no iOS 27.2 beta
+    // e faziam o app fechar ao abrir o Resumo (e o widget travar).
     func concluidas(em agora: Date) -> Int {
-        agora >= validoAte ? 0 : tarefas.filter(\.concluida).count
+        agora < validoAte ? tarefas.filter(\.concluida).count : 0
     }
 
     func completa(em agora: Date) -> Bool {
@@ -29,6 +31,8 @@ struct ResumoTarefa: Identifiable {
     let nome: String
     let concluida: Bool
     var nota: String = ""
+    var horario: String = ""
+    var valorTexto: String? = nil   // tarefa de valor: "1,5 / 3 L" (nil = tarefa de marcar)
 }
 
 enum ResumoWidget {
@@ -36,13 +40,16 @@ enum ResumoWidget {
     static func carregar() -> [ResumoRotina] {
         let categorias = CategoriaDAO().listarTodas()
         let tarefaDao = TarefaDAO()
+        let puloDao = PuloDAO()
 
         return RotinaDAO().listarTodas().compactMap { rotina in
             guard rotina.ativa, let id = rotina.id,
                   let validoAte = DataUtil.inicioProximoPeriodo(frequencia: rotina.frequencia)
             else { return nil }
             let tarefas = tarefaDao.listarPorRotina(id, frequencia: rotina.frequencia).compactMap { tarefa in
-                tarefa.id.map { ResumoTarefa(id: $0, nome: tarefa.nome, concluida: tarefa.concluidaHoje, nota: tarefa.nota) }
+                tarefa.id.map { ResumoTarefa(id: $0, nome: tarefa.nome, concluida: tarefa.concluidaHoje, nota: tarefa.nota,
+                                        horario: tarefa.horario,
+                                        valorTexto: tarefa.ehValor ? tarefa.valorDescrito : nil) }
             }
             return ResumoRotina(
                 id: id,
@@ -52,7 +59,7 @@ enum ResumoWidget {
                 validoAte: validoAte,
                 frequencia: rotina.frequencia,
                 icone: rotina.iconeExibido,
-                programadaHoje: rotina.programada(em: DataUtil.hoje())
+                programadaHoje: rotina.programada(em: DataUtil.hoje()) && !puloDao.puladaAgora(rotina)
             )
         }
     }

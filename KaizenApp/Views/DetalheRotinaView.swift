@@ -11,13 +11,21 @@ struct DetalheRotinaView: View {
     @State private var novaTarefaNome = ""
     @State private var novaTarefaNota = ""
     @State private var novaTarefaDias: Set<Int> = []
+    @State private var novaTarefaHorario = ""
+    @State private var novaTarefaTipo = "check"
+    @State private var novaTarefaUnidade = ""
+    @State private var novaTarefaMeta = ""
+    @State private var novaTarefaSaude = ""
     @State private var mostrarCampoNovaTarefa = false
     @FocusState private var focoNovaTarefa: Bool
     @State private var tarefaParaEditar: Tarefa?
+    @State private var tarefaParaAnotar: Tarefa?   // tarefa de valor: abre a tela de anotar
     @State private var mostrarOrganizar = false
     @State private var mostrarEdicao = false
     @State private var mostrarEstatisticas = false
     @State private var mostrarComemoracao = false
+    @State private var mostrarDiasAnteriores = false
+    @State private var pulada = false           // pulou o período atual ("Pular hoje")
     @State private var toquesEmTarefas = 0      // gatilho da vibração leve a cada toque
     @State private var conclusoes = 0           // gatilho da vibração de sucesso
     @Environment(\.scenePhase) private var scenePhase
@@ -44,7 +52,9 @@ struct DetalheRotinaView: View {
                     propriedades
                     if !rotina.ativa {
                         avisoPausada
-                    } else if !viewModel.programadaHoje {
+                    } else if pulada {
+                        avisoPulada
+                    } else if !rotina.programada(em: DataUtil.hoje()) {
                         avisoFolga
                     }
                     Divider()
@@ -79,6 +89,18 @@ struct DetalheRotinaView: View {
                             Label("Organizar tarefas", systemImage: "arrow.up.arrow.down")
                         }
                     }
+                    if rotina.ativa && rotina.programada(em: DataUtil.hoje()) {
+                        Button { alternarPulo() } label: {
+                            if pulada {
+                                Label("Desfazer pulo", systemImage: "arrow.uturn.backward")
+                            } else {
+                                Label(textoPular, systemImage: "forward")
+                            }
+                        }
+                    }
+                    Button { mostrarDiasAnteriores = true } label: {
+                        Label("Corrigir dias anteriores", systemImage: "calendar.badge.checkmark")
+                    }
                     Button { alternarPausa() } label: {
                         if rotina.ativa {
                             Label("Pausar rotina", systemImage: "pause.circle")
@@ -97,11 +119,26 @@ struct DetalheRotinaView: View {
         .navigationDestination(isPresented: $mostrarEdicao) {
             EditarRotinaView(viewModel: RotinaViewModel(), rotina: rotina)
         }
-        .sheet(item: $tarefaParaEditar) { tarefa in
-            EditarTarefaView(tarefa: tarefa, mostrarDias: rotina.frequencia == "Diária", cor: cor) { nome, nota, dias in
-                viewModel.editar(tarefa, nome: nome, nota: nota, dias: dias)
+        .sheet(item: $tarefaParaAnotar) { tarefa in
+            AnotarValorView(tarefa: tarefa, cor: cor) { valor in
+                toquesEmTarefas += 1
+                if viewModel.registrarValor(tarefa, valor: valor) {
+                    comemorar()
+                }
             }
             .presentationDetents([.medium])
+        }
+        .sheet(item: $tarefaParaEditar) { tarefa in
+            EditarTarefaView(tarefa: tarefa, mostrarDias: rotina.frequencia == "Diária", frequencia: rotina.frequencia, cor: cor) {
+                nome, nota, dias, horario, tipo, unidade, meta, saude in
+                viewModel.editar(tarefa, nome: nome, nota: nota, dias: dias, horario: horario,
+                                 tipo: tipo, unidade: unidade, meta: meta, saude: saude)
+                Task { await sincronizarSaude() }
+            }
+            .presentationDetents([.large])
+        }
+        .sheet(isPresented: $mostrarDiasAnteriores) {
+            DiasAnterioresView(rotina: rotina, cor: cor) { recarregarSequencia() }
         }
         .sheet(isPresented: $mostrarOrganizar) {
             OrganizarTarefasView(viewModel: viewModel)
@@ -110,9 +147,13 @@ struct DetalheRotinaView: View {
             recarregarRotina()
             viewModel.carregar()
         }
+        .task { await sincronizarSaude() }
         // Recarrega ao voltar pro app — se virou o dia, as tarefas aparecem desmarcadas
         .onChange(of: scenePhase) { _, fase in
-            if fase == .active { viewModel.carregar() }
+            if fase == .active {
+                viewModel.carregar()
+                Task { await sincronizarSaude() }
+            }
         }
     }
 
@@ -156,8 +197,8 @@ struct DetalheRotinaView: View {
                     Text("Vazio").foregroundStyle(.tertiary)
                 }
             }
-            propriedade("Lembrete", icone: "bell") {
-                Text(textoLembrete).foregroundStyle(rotina.lembreteAtivo ? .primary : .tertiary)
+            propriedade("Lembretes", icone: "bell") {
+                Text(textoLembrete).foregroundStyle(horariosDasTarefas.isEmpty ? .tertiary : .primary)
             }
             propriedade("Sequência", icone: "flame") {
                 Text("\(sequencia) seguidas") + Text("  ·  recorde \(recorde)").foregroundColor(.secondary)
@@ -189,17 +230,22 @@ struct DetalheRotinaView: View {
         }
     }
 
+    private var horariosDasTarefas: [String] {
+        Set(viewModel.todasTarefas.map(\.horario).filter { !$0.isEmpty }).sorted()
+    }
+
+    // "07:00, 12:30 e 19:00" (+ o dia, em semanais e mensais) ou "Nenhum"
     private var textoLembrete: String {
-        guard rotina.lembreteAtivo, !rotina.horarioLembrete.isEmpty else { return "Desligado" }
+        let horarios = horariosDasTarefas
+        guard !horarios.isEmpty else { return "Nenhum — defina na tarefa" }
+        let lista = horarios.count > 3 ? "\(horarios.count) horários"
+            : horarios.count == 1 ? horarios[0]
+            : horarios.dropLast().joined(separator: ", ") + " e " + horarios[horarios.count - 1]
         let dias = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"]
         switch rotina.frequencia {
-        case "Semanal":
-            let dia = dias[max(0, min(rotina.diaLembrete - 1, 6))]
-            return "\(dia.capitalized) às \(rotina.horarioLembrete)"
-        case "Mensal":
-            return "Dia \(rotina.diaLembrete) às \(rotina.horarioLembrete)"
-        default:
-            return "Todo dia às \(rotina.horarioLembrete)"
+        case "Semanal": return "\(dias[max(0, min(rotina.diaLembrete - 1, 6))].capitalized) · \(lista)"
+        case "Mensal": return "Dia \(rotina.diaLembrete) · \(lista)"
+        default: return lista
         }
     }
 
@@ -209,6 +255,16 @@ struct DetalheRotinaView: View {
         VStack(alignment: .leading, spacing: 2) {
             ForEach(viewModel.tarefas) { tarefa in
                 LinhaTarefa(tarefa: tarefa, cor: cor, mostrarDias: rotina.frequencia == "Diária") {
+                    // Contagem: cada toque soma 1 (já feita, abre pra corrigir)
+                    if tarefa.ehContagem && !tarefa.concluidaHoje {
+                        toquesEmTarefas += 1
+                        if viewModel.registrarValor(tarefa, valor: tarefa.valorAtual + 1) { comemorar() }
+                        return
+                    }
+                    if tarefa.ehValor {
+                        tarefaParaAnotar = tarefa
+                        return
+                    }
                     toquesEmTarefas += 1
                     if viewModel.alternarConcluida(tarefa) {
                         comemorar()
@@ -218,11 +274,26 @@ struct DetalheRotinaView: View {
             }
             novaTarefa
             outrosDias
+            // Atalho visível pra corrigir dias que passaram (também no menu "…")
+            Button { mostrarDiasAnteriores = true } label: {
+                Label("Dias anteriores", systemImage: "calendar")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .padding(.top, 20)
+            }
+            .buttonStyle(.plain)
         }
     }
 
     @ViewBuilder
     private func menuDaTarefa(_ tarefa: Tarefa) -> some View {
+        if tarefa.ehContagem {
+            Button {
+                tarefaParaAnotar = tarefa
+            } label: {
+                Label("Ajustar contagem", systemImage: "plusminus")
+            }
+        }
         Button {
             tarefaParaEditar = tarefa
         } label: {
@@ -253,7 +324,8 @@ struct DetalheRotinaView: View {
                             .frame(width: 22)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(tarefa.nome).foregroundStyle(.secondary)
-                            Text(DiasSemana.descricao(tarefa.diasSemana))
+                            Text(tarefa.horario.isEmpty ? DiasSemana.descricao(tarefa.diasSemana)
+                                 : "\(DiasSemana.descricao(tarefa.diasSemana)) · \(tarefa.horario)")
                                 .font(.caption)
                                 .foregroundStyle(.tertiary)
                         }
@@ -291,6 +363,14 @@ struct DetalheRotinaView: View {
                     }
                     .padding(.leading, 36)
                 }
+                VStack(spacing: 6) {
+                    CampoTipoTarefa(tipo: $novaTarefaTipo, unidade: $novaTarefaUnidade, meta: $novaTarefaMeta, saude: $novaTarefaSaude,
+                                    frequencia: rotina.frequencia)
+                        .textFieldStyle(.roundedBorder)
+                    CampoHorario(horario: $novaTarefaHorario)
+                }
+                .font(.subheadline)
+                .padding(.leading, 36)
                 HStack {
                     Spacer()
                     Button("Cancelar") {
@@ -298,6 +378,11 @@ struct DetalheRotinaView: View {
                         novaTarefaNome = ""
                         novaTarefaNota = ""
                         novaTarefaDias = []
+                        novaTarefaHorario = ""
+                        novaTarefaTipo = "check"
+                        novaTarefaUnidade = ""
+                        novaTarefaMeta = ""
+                        novaTarefaSaude = ""
                     }
                     Button("Adicionar", action: adicionarTarefa)
                         .buttonStyle(.borderedProminent)
@@ -325,9 +410,18 @@ struct DetalheRotinaView: View {
     private func adicionarTarefa() {
         let nome = novaTarefaNome.trimmingCharacters(in: .whitespaces)
         guard !nome.isEmpty else { return }
-        viewModel.adicionar(nome: nome, nota: novaTarefaNota, dias: novaTarefaDias)
+        viewModel.adicionar(nome: nome, nota: novaTarefaNota, dias: novaTarefaDias, horario: novaTarefaHorario,
+                            tipo: novaTarefaTipo, unidade: novaTarefaUnidade, meta: NumeroUtil.ler(novaTarefaMeta),
+                            saude: novaTarefaSaude)
+        let ligadaAoSaude = !novaTarefaSaude.isEmpty
         novaTarefaNome = ""
         novaTarefaNota = ""
+        novaTarefaHorario = ""
+        novaTarefaTipo = "check"
+        novaTarefaUnidade = ""
+        novaTarefaMeta = ""
+        novaTarefaSaude = ""
+        if ligadaAoSaude { Task { await sincronizarSaude() } }
         // Os dias ficam: ajuda a adicionar várias tarefas da sexta em sequência
         // Continua no campo, pra adicionar várias seguidas como numa lista do Notion
         focoNovaTarefa = true
@@ -335,6 +429,14 @@ struct DetalheRotinaView: View {
     }
 
     // MARK: - Ações
+
+    // Traz do app Saúde os valores das tarefas ligadas a ele
+    private func sincronizarSaude() async {
+        guard viewModel.todasTarefas.contains(where: { !$0.saude.isEmpty }) else { return }
+        await SaudeService.sincronizar()
+        viewModel.carregar()
+        recarregarSequencia()
+    }
 
     // Mostra o selo de rotina completa por ~2s, com vibração de sucesso
     private func comemorar() {
@@ -345,6 +447,51 @@ struct DetalheRotinaView: View {
             try? await Task.sleep(for: .seconds(2))
             withAnimation { mostrarComemoracao = false }
         }
+    }
+
+    private var textoPular: String {
+        switch rotina.frequencia {
+        case "Semanal": "Pular esta semana"
+        case "Mensal": "Pular este mês"
+        default: "Pular hoje"
+        }
+    }
+
+    // Pular o período atual: fica neutro na sequência e os lembretes dele não tocam
+    private func alternarPulo() {
+        guard let id = rotina.id else { return }
+        let periodo = DataUtil.periodoAtual(frequencia: rotina.frequencia)
+        if pulada {
+            PuloDAO().desfazer(rotinaId: id, periodo: periodo)
+        } else {
+            PuloDAO().pular(rotinaId: id, periodo: periodo)
+        }
+        recarregarRotina()
+        viewModel.carregar()
+        NotificationManager.shared.atualizarLembrete(rotinaId: id)
+        WidgetSync.atualizar()
+    }
+
+    // Aviso de período pulado, com botão pra desfazer
+    private var avisoPulada: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "forward.fill")
+                .font(.title3)
+                .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(rotina.frequencia == "Diária" ? "Pulada hoje" : rotina.frequencia == "Semanal" ? "Pulada nesta semana" : "Pulada neste mês")
+                    .font(.subheadline.bold())
+                Text("Não conta e não quebra a sequência. Os lembretes não tocam.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 0)
+            Button("Desfazer", action: alternarPulo)
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+        }
+        .padding(14)
+        .background(RoundedRectangle(cornerRadius: 14).fill(Color(.tertiarySystemFill)))
     }
 
     private func alternarPausa() {
@@ -399,8 +546,9 @@ struct DetalheRotinaView: View {
         if let id = rotina.id, let salva = RotinaDAO().buscar(id: id) {
             rotina = salva
         }
+        pulada = PuloDAO().puladaAgora(rotina)
         viewModel.frequencia = rotina.frequencia
-        viewModel.programadaHoje = rotina.programada(em: DataUtil.hoje())
+        viewModel.programadaHoje = rotina.programada(em: DataUtil.hoje()) && !pulada
         categoria = CategoriaDAO().listarTodas().first { $0.id == rotina.categoriaId }
         recarregarSequencia()
     }
@@ -425,15 +573,30 @@ struct LinhaTarefa: View {
     var body: some View {
         Button(action: aoTocar) {
             HStack(alignment: .firstTextBaseline, spacing: 12) {
-                Image(systemName: tarefa.concluidaHoje ? "checkmark.square.fill" : "square")
-                    .font(.title3)
-                    .foregroundStyle(tarefa.concluidaHoje ? cor : .secondary)
-                    .contentTransition(.symbolEffect(.replace))
+                if tarefa.ehValor {
+                    // Tarefa de valor: círculo com o progresso em vez da checkbox
+                    CirculoProgresso(progresso: tarefa.progressoValor, cor: cor)
+                        .frame(width: 22, height: 22)
+                        .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + 6 }
+                } else {
+                    Image(systemName: tarefa.concluidaHoje ? "checkmark.square.fill" : "square")
+                        .font(.title3)
+                        .foregroundStyle(tarefa.concluidaHoje ? cor : .secondary)
+                        .contentTransition(.symbolEffect(.replace))
+                }
                 VStack(alignment: .leading, spacing: 2) {
                     Text(tarefa.nome)
                         .foregroundStyle(tarefa.concluidaHoje ? .secondary : .primary)
-                        .strikethrough(tarefa.concluidaHoje)
+                        .strikethrough(tarefa.concluidaHoje && !tarefa.ehValor)
                         .multilineTextAlignment(.leading)
+                    if tarefa.ehValor {
+                        (tarefa.saude.isEmpty ? Text("") : Text(Image(systemName: "heart.fill")) + Text(" "))
+                            .font(.caption2)
+                            .foregroundStyle(.pink)
+                        + Text(tarefa.valorDescrito)
+                            .font(.subheadline.weight(.medium).monospacedDigit())
+                            .foregroundStyle(tarefa.concluidaHoje ? cor : .secondary)
+                    }
                     if !tarefa.nota.isEmpty {
                         Text(tarefa.nota)
                             .font(.caption)
@@ -442,6 +605,9 @@ struct LinhaTarefa: View {
                     }
                 }
                 Spacer(minLength: 0)
+                if !tarefa.horario.isEmpty {
+                    EtiquetaHorario(horario: tarefa.horario)
+                }
                 // Tarefa só de alguns dias: etiqueta com os dias
                 if mostrarDias && !tarefa.diasSemana.isEmpty {
                     Text(DiasSemana.descricao(tarefa.diasSemana))

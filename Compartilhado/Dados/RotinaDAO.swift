@@ -1,6 +1,7 @@
 import Foundation
 import SQLite
 
+// Acesso à tabela de rotinas: criar, listar, editar e excluir (excluir apaga tudo que é dela)
 class RotinaDAO {
     let db = DatabaseManager.shared.db
     let table = Table("rotinas")
@@ -101,8 +102,11 @@ class RotinaDAO {
 
         // Apaga junto as tarefas e o histórico da rotina, pra não deixar registros órfãos
         let rotinaIdFK = Expression<Int64>("rotinaId")
+        try? db?.run("DELETE FROM registros_tarefa WHERE tarefaId IN (SELECT id FROM tarefas WHERE rotinaId = ?)", rotinaId)
+        try? db?.run("DELETE FROM conclusoes WHERE tarefaId IN (SELECT id FROM tarefas WHERE rotinaId = ?)", rotinaId)
         try? db?.run(Table("tarefas").filter(rotinaIdFK == rotinaId).delete())
         try? db?.run(Table("historico_rotina").filter(rotinaIdFK == rotinaId).delete())
         try? db?.run(Table("pausas").filter(rotinaIdFK == rotinaId).delete())
+        try? db?.run(Table("pulos").filter(rotinaIdFK == rotinaId).delete())
     }
 }

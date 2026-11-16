@@ -1,6 +1,8 @@
 import Foundation
 import SQLite
 
+// Histórico de cada rotina: quantas tarefas foram feitas em cada período (dia, semana ou mês).
+// É daqui que saem a sequência, o recorde e os gráficos
 class HistoricoDAO {
     let db = DatabaseManager.shared.db
     let table = Table("historico_rotina")
@@ -14,7 +16,11 @@ class HistoricoDAO {
     // Registra (ou atualiza) o progresso do período atual de uma rotina.
     // A coluna "data" guarda o início do período: o dia, o domingo da semana ou o dia 1 do mês
     func registrarProgresso(rotinaId rid: Int64, frequencia: String, total: Int, concluidas: Int) {
-        let periodo = DataUtil.periodoAtual(frequencia: frequencia)
+        definir(rotinaId: rid, periodo: DataUtil.periodoAtual(frequencia: frequencia), total: total, concluidas: concluidas)
+    }
+
+    // Grava (ou corrige) o progresso de um período qualquer — usado também pra corrigir dias passados
+    func definir(rotinaId rid: Int64, periodo: String, total: Int, concluidas: Int) {
         let existente = table.filter(rotinaId == rid && data == periodo)
 
         if let _ = try? db?.pluck(existente) {

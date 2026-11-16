@@ -18,14 +18,19 @@ struct ProvedorKaizen: TimelineProvider {
         completion(EntradaKaizen(date: .now, rotinas: context.isPreview && rotinas.isEmpty ? Self.exemplo : rotinas))
     }
 
-    // Uma entrada agora e outra em cada virada de período, pra o progresso zerar
-    // na hora certa mesmo se o app não for aberto
+    // Uma entrada agora e outra na próxima virada de período (pra zerar na hora certa).
+    // Depois relê o banco: na virada (tarefas e folgas do dia novo) ou em 30 min, o que vier antes —
+    // assim o widget não fica preso num retrato antigo quando o app não avisa (ex.: dias sem abrir)
     func getTimeline(in context: Context, completion: @escaping (Timeline<EntradaKaizen>) -> Void) {
+        let agora = Date.now
         let rotinas = ResumoWidget.carregar()
-        let viradas = Set(rotinas.map(\.validoAte)).filter { $0 > .now }.sorted()
-        let entradas = ([Date.now] + viradas).map { EntradaKaizen(date: $0, rotinas: rotinas) }
-        completion(Timeline(entries: entradas, policy: .atEnd))
+        let proximaVirada = rotinas.map(\.validoAte).filter { $0 > agora }.min()
+        let releitura = min(proximaVirada ?? .distantFuture, agora.addingTimeInterval(Self.intervaloReleitura))
+        let entradas = ([agora] + [proximaVirada].compactMap { $0 }).map { EntradaKaizen(date: $0, rotinas: rotinas) }
+        completion(Timeline(entries: entradas, policy: .after(releitura)))
     }
+
+    static let intervaloReleitura: TimeInterval = 30 * 60
 
     // Dados de exemplo pra galeria de widgets, quando ainda não há rotinas
     static let exemplo = [
@@ -87,7 +92,7 @@ struct KaizenWidgetView: View {
                 VStack(spacing: 6) {
                     Image(systemName: "checklist")
                         .font(.title2)
-                        .foregroundStyle(CoresWidget.primaria)
+                        .foregroundStyle(Paleta.destaque)
                     Text("Crie uma rotina no Kaizen")
                         .font(.caption)
                         .multilineTextAlignment(.center)
@@ -146,37 +151,44 @@ struct KaizenWidgetView: View {
               systemImage: "checklist")
     }
 
-    // Fração de tarefas feitas nas rotinas de uma frequência (anéis: hoje, semana, mês)
-    private func fracao(_ frequencia: String) -> Double {
-        let daFrequencia = rotinas.filter { $0.frequencia == frequencia }
-        let total = daFrequencia.reduce(0) { $0 + $1.total }
-        guard total > 0 else { return 0 }
-        return Double(daFrequencia.reduce(0) { $0 + $1.concluidas(em: entrada.date) }) / Double(total)
-    }
+    private var tarefasFeitas: Int { rotinas.reduce(0) { $0 + $1.concluidas(em: entrada.date) } }
+    private var totalTarefas: Int { rotinas.reduce(0) { $0 + $1.total } }
 
-    private func aneis(tamanho: CGFloat) -> some View {
-        AneisAtividade(hoje: fracao("Diária"), semana: fracao("Semanal"), mes: fracao("Mensal"),
-                       tamanho: tamanho, animado: false)
-    }
-
-    // Pequeno: os três anéis do Resumo e quantas rotinas estão completas
-    private var resumoGeral: some View {
-        VStack(spacing: 6) {
-            aneis(tamanho: 104)
-            Text(completas == rotinas.count ? "Tudo feito!" : "\(completas) de \(rotinas.count) rotinas")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(completas == rotinas.count ? CoresAneis.hoje : .secondary)
+    // Tarefas feitas hoje em número grande, com uma barra fina
+    private var painel: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Hoje")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            HStack(alignment: .firstTextBaseline, spacing: 2) {
+                Text("\(tarefasFeitas)").font(.system(size: 38, weight: .semibold))
+                Text("/\(totalTarefas)").font(.title3).foregroundStyle(.secondary)
+            }
+            BarraProgresso(progresso: totalTarefas > 0 ? Double(tarefasFeitas) / Double(totalTarefas) : 0)
         }
     }
 
-    // Médio: anéis à esquerda e as rotinas (com emoji) à direita
+    // Pequeno: o painel e quantas rotinas estão completas
+    private var resumoGeral: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            painel
+            Spacer(minLength: 6)
+            Text(completas == rotinas.count ? "Tudo feito!" : "\(completas) de \(rotinas.count) rotinas")
+                .font(.caption.weight(.medium))
+                .foregroundStyle(completas == rotinas.count ? Paleta.destaque : .secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // Médio: o painel à esquerda e as rotinas (com emoji) à direita
     private var lista: some View {
-        HStack(spacing: 16) {
-            aneis(tamanho: 112)
+        HStack(spacing: 20) {
+            painel
+                .frame(width: 100)
             VStack(alignment: .leading, spacing: 8) {
                 ForEach(rotinas.prefix(3)) { rotina in
                     let concluidas = rotina.concluidas(em: entrada.date)
-                    let cor = rotina.corHex.map(CoresWidget.hex) ?? cor(daFrequencia: rotina.frequencia)
+                    let cor = rotina.corHex.map(CoresWidget.hex) ?? Paleta.destaque
                     Link(destination: LinkKaizen.rotina(rotina.id)) {
                         HStack(spacing: 6) {
                             Text(rotina.icone.isEmpty ? "📋" : rotina.icone)
@@ -205,14 +217,6 @@ struct KaizenWidgetView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
-
-    private func cor(daFrequencia frequencia: String) -> Color {
-        switch frequencia {
-        case "Semanal": return CoresAneis.semana
-        case "Mensal": return CoresAneis.mes
-        default: return CoresAneis.hoje
-        }
-    }
 }
 
 // Links que o app trata em KaizenAppApp.onOpenURL
@@ -221,10 +225,8 @@ enum LinkKaizen {
     static func rotina(_ id: Int64) -> URL { URL(string: "kaizen://rotina/\(id)")! }
 }
 
-// O widget não enxerga o AppTheme do app; a cor principal é a mesma (3DA9FC)
+// Cores de categoria (hex) no widget, que não enxerga o Color(hex:) do app
 enum CoresWidget {
-    static let primaria = hex("3DA9FC")
-
     static func hex(_ valor: String) -> Color {
         var numero: UInt64 = 0
         Scanner(string: valor.trimmingCharacters(in: CharacterSet(charactersIn: "#"))).scanHexInt64(&numero)

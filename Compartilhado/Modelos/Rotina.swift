@@ -1,5 +1,6 @@
 import Foundation
 
+// Uma rotina é um grupo de tarefas que se repete (todo dia, toda semana ou todo mês)
 struct Rotina: Identifiable, Hashable {
     var id: Int64?
     var nome: String

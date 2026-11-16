@@ -1,6 +1,8 @@
 import Foundation
 import SQLite
 
+// Abre o banco SQLite (no App Group, pra o widget também ler), cria as tabelas
+// e faz as migrações quando uma versão nova do app adiciona colunas
 class DatabaseManager {
     static let shared = DatabaseManager()
     var db: Connection?
@@ -115,7 +117,23 @@ class DatabaseManager {
             t.column(concluidaHoje)
             t.column(dataConclusao, defaultValue: "")
             t.column(nota, defaultValue: "")
+            t.column(Expression<String>("horario"), defaultValue: "")
+            t.column(Expression<String>("tipo"), defaultValue: "check")
+            t.column(Expression<String>("unidade"), defaultValue: "")
+            t.column(Expression<Double?>("meta"))
+            t.column(Expression<String>("saude"), defaultValue: "")
         })
+
+        // Valores anotados nas tarefas de valor: um por tarefa e período (dia, domingo da semana ou dia 1)
+        let registros = Table("registros_tarefa")
+        let tarefaId = Expression<Int64>("tarefaId")
+        try? db?.run(registros.create(ifNotExists: true) { t in
+            t.column(id, primaryKey: .autoincrement)
+            t.column(tarefaId)
+            t.column(Expression<String>("data"))
+            t.column(Expression<Double>("valor"))
+        })
+        try? db?.run(registros.createIndex(tarefaId, Expression<String>("data"), unique: true, ifNotExists: true))
 
         try? db?.run(categorias.create(ifNotExists: true) { t in
             t.column(id, primaryKey: .autoincrement)
@@ -141,8 +159,45 @@ class DatabaseManager {
             t.column(fim, defaultValue: "")
         })
 
+        // Conclusões por tarefa e período (o histórico só guarda o total do período).
+        // Na primeira vez, aproveita a última conclusão de cada tarefa (dataConclusao) como ponto de partida.
+        let conclusoes = Table("conclusoes")
+        let tarefaIdConclusao = Expression<Int64>("tarefaId")
+        let periodoConclusao = Expression<String>("periodo")
+        if (try? db?.run(conclusoes.create { t in
+            t.column(id, primaryKey: .autoincrement)
+            t.column(tarefaIdConclusao)
+            t.column(periodoConclusao)
+        })) != nil {
+            try? db?.run(conclusoes.createIndex(tarefaIdConclusao, periodoConclusao, unique: true, ifNotExists: true))
+            preencherConclusoes(db)
+        }
+
+        // Períodos pulados ("Pular hoje"): um por rotina e período
+        let pulos = Table("pulos")
+        try? db?.run(pulos.create(ifNotExists: true) { t in
+            t.column(id, primaryKey: .autoincrement)
+            t.column(rotinaId)
+            t.column(Expression<String>("periodo"))
+        })
+        try? db?.run(pulos.createIndex(rotinaId, Expression<String>("periodo"), unique: true, ifNotExists: true))
+
         // Garante que só existe um registro por rotina/dia — evita duplicar linhas
         try? db?.run(historico.createIndex(rotinaId, data, unique: true, ifNotExists: true))
+    }
+
+    // Ponto de partida das conclusões por período: a última conclusão gravada em cada tarefa
+    private static func preencherConclusoes(_ db: Connection?) {
+        guard let linhas = try? db?.prepare("""
+            SELECT tarefas.id, tarefas.dataConclusao, rotinas.frequencia FROM tarefas
+            JOIN rotinas ON rotinas.id = tarefas.rotinaId WHERE tarefas.dataConclusao != ''
+            """) else { return }
+        for linha in linhas {
+            guard let tarefaId = linha[0] as? Int64, let data = linha[1] as? String,
+                  let frequencia = linha[2] as? String else { continue }
+            try? db?.run("INSERT OR IGNORE INTO conclusoes (tarefaId, periodo) VALUES (?, ?)",
+                         tarefaId, DataUtil.inicioPeriodo(data, frequencia: frequencia))
+        }
     }
 
     private static func migrarTabelas(_ db: Connection?) {
@@ -158,9 +213,31 @@ class DatabaseManager {
         try? db?.execute("ALTER TABLE rotinas ADD COLUMN diasSemana TEXT DEFAULT ''")
         try? db?.execute("ALTER TABLE tarefas ADD COLUMN diasSemana TEXT DEFAULT ''")
 
+        // Horário por tarefa ("HH:mm"). Na primeira vez (quando a coluna é criada), o horário do
+        // lembrete de cada rotina passa pras tarefas dela que não têm horário, e o lembrete da rotina
+        // é desligado — os lembretes agora são por tarefa.
+        if (try? db?.execute("ALTER TABLE tarefas ADD COLUMN horario TEXT DEFAULT ''")) != nil {
+            try? db?.execute("""
+                UPDATE tarefas SET horario = (SELECT horarioLembrete FROM rotinas WHERE rotinas.id = tarefas.rotinaId)
+                WHERE horario = '' AND rotinaId IN
+                    (SELECT id FROM rotinas WHERE lembreteAtivo = 1 AND horarioLembrete != '')
+                """)
+            try? db?.execute("UPDATE rotinas SET lembreteAtivo = 0, horarioLembrete = ''")
+        }
+
+        // Tarefas de valor
+        try? db?.execute("ALTER TABLE tarefas ADD COLUMN tipo TEXT DEFAULT 'check'")
+        try? db?.execute("ALTER TABLE tarefas ADD COLUMN unidade TEXT DEFAULT ''")
+        try? db?.execute("ALTER TABLE tarefas ADD COLUMN meta REAL")
+        // Métrica do app Saúde ligada à tarefa de valor
+        try? db?.execute("ALTER TABLE tarefas ADD COLUMN saude TEXT DEFAULT ''")
+
         // Limpa tarefas e histórico de rotinas que já foram excluídas
         try? db?.execute("DELETE FROM tarefas WHERE rotinaId NOT IN (SELECT id FROM rotinas)")
         try? db?.execute("DELETE FROM historico_rotina WHERE rotinaId NOT IN (SELECT id FROM rotinas)")
         try? db?.execute("DELETE FROM pausas WHERE rotinaId NOT IN (SELECT id FROM rotinas)")
+        try? db?.execute("DELETE FROM registros_tarefa WHERE tarefaId NOT IN (SELECT id FROM tarefas)")
+        try? db?.execute("DELETE FROM pulos WHERE rotinaId NOT IN (SELECT id FROM rotinas)")
+        try? db?.execute("DELETE FROM conclusoes WHERE tarefaId NOT IN (SELECT id FROM tarefas)")
     }
 }

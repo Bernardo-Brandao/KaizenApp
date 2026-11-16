@@ -2,11 +2,14 @@ import SwiftUI
 import UniformTypeIdentifiers
 import UserNotifications
 
+// Aba Ajustes: backup, notificações, bloqueio com Face ID e categorias
 struct AjustesView: View {
     @State private var mostrarImportador = false
     @State private var backupPendente: Backup?        // lido do arquivo, esperando confirmação
     @State private var mensagem: Mensagem?
     @AppStorage("resumoSemanalAtivo") private var resumoSemanalAtivo = true
+    @AppStorage(NotificationManager.chaveFimDoDia) private var fimDoDia = NotificationManager.horarioFimDoDiaPadrao
+    @AppStorage(Bloqueio.chaveAtivo) private var bloqueioAtivo = false
 
     var body: some View {
         NavigationStack {
@@ -23,7 +26,7 @@ struct AjustesView: View {
                 } header: {
                     Text("Backup")
                 } footer: {
-                    Text("O backup guarda rotinas, tarefas, categorias, histórico e pausas num arquivo. Importar substitui todos os dados atuais.")
+                    Text("O backup guarda rotinas, tarefas, categorias, histórico, pausas, dias pulados e o que foi feito em cada dia num arquivo. Importar substitui todos os dados atuais.")
                 }
 
                 Section {
@@ -33,10 +36,24 @@ struct AjustesView: View {
                     .onChange(of: resumoSemanalAtivo) { _, ativo in
                         NotificationManager.shared.agendarResumoSemanal(ativo: ativo)
                     }
+                    CampoHorario(horario: $fimDoDia, titulo: "Lembrete do fim do dia", icone: "moon")
+                        .onChange(of: fimDoDia) { _, _ in
+                            NotificationManager.shared.agendarFimDoDia()
+                        }
                 } header: {
                     Text("Notificações")
                 } footer: {
-                    Text("Todo domingo às 19h, uma notificação com como foi a sua semana.")
+                    Text("Resumo semanal: todo domingo às 19h. Fim do dia: só avisa se ainda faltar alguma tarefa das rotinas diárias.")
+                }
+
+                Section {
+                    Toggle(isOn: Binding(get: { bloqueioAtivo }, set: alternarBloqueio)) {
+                        Label("Bloquear com \(Bloqueio.nomeBiometria)", systemImage: Bloqueio.iconeBiometria)
+                    }
+                } header: {
+                    Text("Privacidade")
+                } footer: {
+                    Text("Pede o \(Bloqueio.nomeBiometria) sempre que você abrir o Kaizen. Se não reconhecer, dá para usar o código do iPhone.")
                 }
 
                 Section("Organização") {
@@ -68,6 +85,20 @@ struct AjustesView: View {
             }
             .alert(item: $mensagem) { mensagem in
                 Alert(title: Text(mensagem.titulo), message: Text(mensagem.texto))
+            }
+        }
+    }
+
+    // Ligar ou desligar o bloqueio pede o Face ID antes, pra confirmar que funciona
+    private func alternarBloqueio(_ ligar: Bool) {
+        guard Bloqueio.disponivel else {
+            mensagem = Mensagem(titulo: "Bloqueio indisponível",
+                                texto: "Configure um código no iPhone (Ajustes › Face ID e Código) para usar o bloqueio.")
+            return
+        }
+        Task {
+            if await Bloqueio.autenticar(motivo: ligar ? "Ativar o bloqueio do Kaizen" : "Desativar o bloqueio do Kaizen") {
+                bloqueioAtivo = ligar
             }
         }
     }

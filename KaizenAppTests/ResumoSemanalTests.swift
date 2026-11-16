@@ -32,6 +32,15 @@ struct ResumoSemanalTests {
         #expect(resumo.fim == "2026-10-17")
     }
 
+    // Dia pulado e não feito não conta: some das possíveis e vira "folga" na linha
+    @Test func diaPuladoNaoPuxaATaxaPraBaixo() {
+        var comPulo = manha
+        comPulo.pulados = ["2026-10-14"]   // quarta: não foi feita, mas foi pulada
+        let resumo = ResumoSemanal.calcular(rotinas: [comPulo], inicioSemana: "2026-10-11")
+        #expect(resumo.taxa == 4.0 / 6.0)
+        #expect(resumo.linhas.first?.dias[3] == nil)
+    }
+
     @Test func diasPerfeitosETarefas() {
         let resumo = ResumoSemanal.calcular(rotinas: [manha, faxina], inicioSemana: "2026-10-11")
         #expect(resumo.diasPerfeitos == 4)

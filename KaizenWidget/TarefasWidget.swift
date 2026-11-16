@@ -46,7 +46,7 @@ struct TarefasWidgetView: View {
                 VStack(spacing: 6) {
                     Image(systemName: "checklist")
                         .font(.title2)
-                        .foregroundStyle(CoresWidget.primaria)
+                        .foregroundStyle(Paleta.destaque)
                     Text("Crie uma rotina com tarefas no Kaizen")
                         .font(.caption)
                         .multilineTextAlignment(.center)
@@ -59,9 +59,9 @@ struct TarefasWidgetView: View {
 
     private func conteudo(_ rotina: ResumoRotina) -> some View {
         let concluidas = rotina.concluidas(em: entrada.date)
-        let cor = rotina.corHex.map(CoresWidget.hex) ?? CoresWidget.primaria
+        let cor = rotina.corHex.map(CoresWidget.hex) ?? Paleta.destaque
         // Se o período virou desde a última leitura, mostra tudo desmarcado
-        let periodoVirou = entrada.date >= rotina.validoAte
+        let periodoVirou = !(entrada.date < rotina.validoAte)   // sem ">=" em Date (ver ResumoRotina)
 
         return VStack(alignment: .leading, spacing: 8) {
             Link(destination: LinkKaizen.rotina(rotina.id)) {
@@ -85,26 +85,19 @@ struct TarefasWidgetView: View {
 
             ForEach(rotina.tarefas.prefix(limite)) { tarefa in
                 let feita = tarefa.concluida && !periodoVirou
-                Button(intent: AlternarTarefaIntent(tarefaId: tarefa.id, rotinaId: rotina.id)) {
-                    HStack(spacing: 8) {
-                        Image(systemName: feita ? "checkmark.circle.fill" : "circle")
-                            .foregroundStyle(feita ? cor : .secondary)
-                        Text(tarefa.nome)
-                            .font(.subheadline)
-                            .strikethrough(feita)
-                            .foregroundStyle(feita ? .secondary : .primary)
-                            .lineLimit(1)
-                        if !tarefa.nota.isEmpty {
-                            Text(tarefa.nota)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                        }
-                        Spacer(minLength: 0)
+                if let valorTexto = tarefa.valorTexto {
+                    // Tarefa de valor: widget não aceita digitar — tocar abre a rotina no app
+                    Link(destination: LinkKaizen.rotina(rotina.id)) {
+                        linhaTarefa(tarefa, feita: feita, cor: cor, icone: feita ? "checkmark.circle.fill" : "number.circle",
+                                    detalhe: periodoVirou ? nil : valorTexto)
                     }
-                    .contentShape(Rectangle())
+                } else {
+                    Button(intent: AlternarTarefaIntent(tarefaId: tarefa.id, rotinaId: rotina.id)) {
+                        linhaTarefa(tarefa, feita: feita, cor: cor, icone: feita ? "checkmark.circle.fill" : "circle",
+                                    detalhe: nil)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
 
             if rotina.total > limite {
@@ -115,6 +108,38 @@ struct TarefasWidgetView: View {
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+}
+
+extension TarefasWidgetView {
+    func linhaTarefa(_ tarefa: ResumoTarefa, feita: Bool, cor: Color, icone: String, detalhe: String?) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: icone)
+                .foregroundStyle(feita ? cor : .secondary)
+            Text(tarefa.nome)
+                .font(.subheadline)
+                .strikethrough(feita && tarefa.valorTexto == nil)
+                .foregroundStyle(feita ? .secondary : .primary)
+                .lineLimit(1)
+            if let detalhe {
+                Text(detalhe)
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(feita ? cor : .secondary)
+                    .lineLimit(1)
+            } else if !tarefa.nota.isEmpty {
+                Text(tarefa.nota)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 0)
+            if !tarefa.horario.isEmpty {
+                Text(tarefa.horario)
+                    .font(.caption2.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .contentShape(Rectangle())
     }
 }
 

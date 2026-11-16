@@ -1,6 +1,7 @@
 import Foundation
 import Combine
 
+// Tarefas de uma rotina na tela da rotina: marcar, anotar valor, criar, editar e reordenar
 class TarefaViewModel: ObservableObject {
     @Published var tarefas: [Tarefa] = []          // as de hoje (em rotinas diárias, algumas valem só em certos dias)
     @Published var todasTarefas: [Tarefa] = []     // todas, pra organizar e pra seção "Em outros dias"
@@ -27,11 +28,14 @@ class TarefaViewModel: ObservableObject {
         registrarProgressoAtual()
     }
 
-    func adicionar(nome: String, nota: String = "", dias: Set<Int> = []) {
+    func adicionar(nome: String, nota: String = "", dias: Set<Int> = [], horario: String = "",
+                   tipo: String = "check", unidade: String = "", meta: Double? = nil, saude: String = "") {
         let novaOrdem = todasTarefas.count
         let nova = Tarefa(id: nil, rotinaId: rotinaId, nome: nome, ordem: novaOrdem, concluidaHoje: false,
                           nota: nota.trimmingCharacters(in: .whitespacesAndNewlines),
-                          diasSemana: DiasSemana.normalizar(dias))
+                          diasSemana: DiasSemana.normalizar(dias), horario: horario,
+                          tipo: tipo, unidade: unidade.trimmingCharacters(in: .whitespaces),
+                          meta: tipo == "check" ? nil : meta, saude: tipo == "valor" ? saude : "")
         dao.inserir(nova)
         carregar()
         atualizarLembrete()
@@ -43,7 +47,17 @@ class TarefaViewModel: ObservableObject {
         let estavaCompleta = rotinaCompleta
         var atualizada = tarefa
         atualizada.concluidaHoje.toggle()
-        dao.atualizar(atualizada)
+        dao.atualizar(atualizada, frequencia: frequencia)
+        carregar()
+        atualizarLembrete()
+        return !estavaCompleta && rotinaCompleta
+    }
+
+    // Anota o valor de uma tarefa de valor; retorna true se isso completou a rotina (pra comemorar)
+    @discardableResult
+    func registrarValor(_ tarefa: Tarefa, valor: Double) -> Bool {
+        let estavaCompleta = rotinaCompleta
+        dao.registrarValor(tarefa, valor: valor, frequencia: frequencia)
         carregar()
         atualizarLembrete()
         return !estavaCompleta && rotinaCompleta
@@ -53,13 +67,16 @@ class TarefaViewModel: ObservableObject {
         !tarefas.isEmpty && tarefas.allSatisfy { $0.concluidaHoje }
     }
 
-    func editar(_ tarefa: Tarefa, nome: String, nota: String, dias: Set<Int>) {
+    func editar(_ tarefa: Tarefa, nome: String, nota: String, dias: Set<Int>, horario: String,
+                tipo: String, unidade: String, meta: Double?, saude: String = "") {
         let nomeLimpo = nome.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !nomeLimpo.isEmpty else { return }
         dao.editar(tarefa, nome: nomeLimpo, nota: nota.trimmingCharacters(in: .whitespacesAndNewlines),
-                   dias: DiasSemana.normalizar(dias))
+                   dias: DiasSemana.normalizar(dias), horario: horario,
+                   tipo: tipo, unidade: unidade.trimmingCharacters(in: .whitespaces),
+                   meta: tipo == "check" ? nil : meta, saude: saude)
         carregar()
-        atualizarLembrete()   // mudar os dias pode mudar se a rotina está completa hoje
+        atualizarLembrete()   // dias e horário mudam os lembretes da tarefa
     }
 
     func mover(de origem: IndexSet, para destino: Int) {

@@ -1,5 +1,6 @@
 import SwiftUI
 
+// Telas de categorias: a lista e o formulário de criar/editar
 struct CategoriasView: View {
     @StateObject var viewModel = CategoriaViewModel()
     @State private var novoNome = ""

@@ -1,7 +1,7 @@
 import Foundation
 import Combine
 
-// Dados da aba Resumo: os três anéis, a semana, a sequência e os prêmios
+// Dados da aba Resumo: o progresso de hoje, os últimos 7 dias, a sequência e os prêmios
 class ResumoViewModel: ObservableObject {
     @Published var rotinas: [ResumoRotina] = []
     @Published var semana: [DiaSemana] = []
@@ -30,7 +30,7 @@ class ResumoViewModel: ObservableObject {
 
         melhorSequenciaAtual = sequencias.max() ?? 0
         // Hoje usa o progresso ao vivo das rotinas diárias (o histórico pode estar um passo atrás)
-        semana = Self.semanaAtual(historicoDiario: historicoDiario).map { dia in
+        semana = Self.ultimosDias(historicoDiario: historicoDiario).map { dia in
             guard dia.ehHoje, let hoje = Self.progresso(rotinas, frequencia: "Diária"), hoje.total > 0 else { return dia }
             return DiaSemana(data: dia.data, progresso: Double(hoje.feitas) / Double(hoje.total),
                              futuro: false, ehHoje: true)
@@ -40,30 +40,24 @@ class ResumoViewModel: ObservableObject {
 
     var premiosConquistados: Int { premios.filter(\.conquistado).count }
 
-    // MARK: - Anéis
+    // MARK: - Progresso
 
     // Fração de tarefas feitas nas rotinas de uma frequência (nil = nenhuma rotina dessa frequência)
     static func progresso(_ rotinas: [ResumoRotina], frequencia: String, agora: Date = .now) -> (feitas: Int, total: Int)? {
-        // Rotinas de folga hoje ficam fora dos anéis
+        // Rotinas de folga hoje ficam de fora
         let daFrequencia = rotinas.filter { $0.frequencia == frequencia && $0.total > 0 && $0.programadaHoje }
         guard !daFrequencia.isEmpty else { return nil }
         return (daFrequencia.reduce(0) { $0 + $1.concluidas(em: agora) }, daFrequencia.reduce(0) { $0 + $1.total })
     }
 
-    func fracao(_ frequencia: String) -> Double {
-        guard let p = Self.progresso(rotinas, frequencia: frequencia), p.total > 0 else { return 0 }
-        return Double(p.feitas) / Double(p.total)
-    }
+    // MARK: - Últimos dias
 
-    // MARK: - Semana
-
-    // Os 7 dias da semana atual (domingo a sábado), com o progresso das rotinas diárias em cada dia
-    static func semanaAtual(historicoDiario: [HistoricoDia], hoje: String = DataUtil.hoje()) -> [DiaSemana] {
-        let domingo = DataUtil.inicioPeriodo(hoje, frequencia: "Semanal")
-        var dias = [domingo]
-        while dias.count < 7, let data = DataUtil.data(de: dias[dias.count - 1]),
-              let seguinte = Calendar(identifier: .gregorian).date(byAdding: .day, value: 1, to: data) {
-            dias.append(DataUtil.string(de: seguinte))
+    // Os últimos dias até hoje (hoje por último), com o progresso das rotinas diárias em cada dia
+    static func ultimosDias(historicoDiario: [HistoricoDia], hoje: String = DataUtil.hoje(), quantidade: Int = 7) -> [DiaSemana] {
+        let calendario = Calendar(identifier: .gregorian)
+        guard let dataHoje = DataUtil.data(de: hoje) else { return [] }
+        let dias = (0..<quantidade).reversed().compactMap { atras in
+            calendario.date(byAdding: .day, value: -atras, to: dataHoje).map(DataUtil.string(de:))
         }
 
         return dias.map { dia in
@@ -73,7 +67,7 @@ class ResumoViewModel: ObservableObject {
             return DiaSemana(
                 data: dia,
                 progresso: total > 0 ? Double(feitas) / Double(total) : nil,
-                futuro: dia > hoje,
+                futuro: false,
                 ehHoje: dia == hoje
             )
         }

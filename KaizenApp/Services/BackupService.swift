@@ -13,6 +13,9 @@ struct Backup: Codable {
     var tarefas: [TarefaBackup]
     var historico: [HistoricoBackup]
     var pausas: [PausaBackup]
+    var registrosTarefa: [RegistroTarefaBackup]? = nil   // opcional: backups de antes das tarefas de valor
+    var pulos: [PuloBackup]? = nil                       // opcional: backups de antes do "Pular hoje"
+    var conclusoes: [ConclusaoBackup]? = nil             // opcional: backups de antes das conclusões por dia
 
     struct CategoriaBackup: Codable, Equatable {
         var id: Int64, nome: String, corHex: String
@@ -27,12 +30,26 @@ struct Backup: Codable {
         var id: Int64, rotinaId: Int64, nome: String, ordem: Int, dataConclusao: String
         var nota: String? = nil   // opcional: backups de antes das notas não têm essa chave
         var diasSemana: String? = nil
+        var horario: String? = nil
+        var tipo: String? = nil
+        var unidade: String? = nil
+        var meta: Double? = nil
+        var saude: String? = nil
     }
     struct HistoricoBackup: Codable, Equatable {
         var id: Int64, rotinaId: Int64, data: String, totalTarefas: Int, tarefasConcluidas: Int
     }
+    struct RegistroTarefaBackup: Codable, Equatable {
+        var tarefaId: Int64, data: String, valor: Double
+    }
     struct PausaBackup: Codable, Equatable {
         var id: Int64, rotinaId: Int64, inicio: String, fim: String
+    }
+    struct PuloBackup: Codable, Equatable {
+        var rotinaId: Int64, periodo: String
+    }
+    struct ConclusaoBackup: Codable, Equatable {
+        var tarefaId: Int64, periodo: String
     }
 }
 
@@ -78,6 +95,17 @@ enum BackupService {
     private static let fim = Expression<String>("fim")
     private static let nota = Expression<String>("nota")
     private static let diasSemana = Expression<String>("diasSemana")
+    private static let horario = Expression<String>("horario")
+    private static let tipo = Expression<String>("tipo")
+    private static let unidade = Expression<String>("unidade")
+    private static let meta = Expression<Double?>("meta")
+    private static let saude = Expression<String>("saude")
+    private static let registros = Table("registros_tarefa")
+    private static let tarefaId = Expression<Int64>("tarefaId")
+    private static let valor = Expression<Double>("valor")
+    private static let pulos = Table("pulos")
+    private static let conclusoes = Table("conclusoes")
+    private static let periodo = Expression<String>("periodo")
 
     // MARK: - Exportar
 
@@ -97,7 +125,8 @@ enum BackupService {
             },
             tarefas: try db.prepare(tarefas).map {
                 .init(id: $0[id], rotinaId: $0[rotinaId], nome: $0[nome], ordem: $0[ordem], dataConclusao: $0[dataConclusao],
-                      nota: $0[nota], diasSemana: $0[diasSemana])
+                      nota: $0[nota], diasSemana: $0[diasSemana], horario: $0[horario],
+                      tipo: $0[tipo], unidade: $0[unidade], meta: $0[meta], saude: $0[saude])
             },
             historico: try db.prepare(historico).map {
                 .init(id: $0[id], rotinaId: $0[rotinaId], data: $0[data],
@@ -105,6 +134,15 @@ enum BackupService {
             },
             pausas: try db.prepare(pausas).map {
                 .init(id: $0[id], rotinaId: $0[rotinaId], inicio: $0[inicio], fim: $0[fim])
+            },
+            registrosTarefa: try db.prepare(registros).map {
+                .init(tarefaId: $0[tarefaId], data: $0[data], valor: $0[valor])
+            },
+            pulos: try db.prepare(pulos).map {
+                .init(rotinaId: $0[rotinaId], periodo: $0[periodo])
+            },
+            conclusoes: try db.prepare(conclusoes).map {
+                .init(tarefaId: $0[tarefaId], periodo: $0[periodo])
             }
         )
     }
@@ -133,7 +171,7 @@ enum BackupService {
     static func restaurar(_ backup: Backup, db: Connection? = DatabaseManager.shared.db) throws {
         guard let db else { throw BackupErro.semBanco }
         try db.transaction {
-            for tabela in [pausas, historico, tarefas, rotinas, categorias] {
+            for tabela in [conclusoes, pulos, registros, pausas, historico, tarefas, rotinas, categorias] {
                 try db.run(tabela.delete())
             }
             for c in backup.categorias {
@@ -151,7 +189,9 @@ enum BackupService {
                 try db.run(tarefas.insert(
                     id <- t.id, rotinaId <- t.rotinaId, nome <- t.nome, ordem <- t.ordem,
                     concluidaHoje <- !t.dataConclusao.isEmpty, dataConclusao <- t.dataConclusao,
-                    nota <- (t.nota ?? ""), diasSemana <- (t.diasSemana ?? "")
+                    nota <- (t.nota ?? ""), diasSemana <- (t.diasSemana ?? ""), horario <- (t.horario ?? ""),
+                    tipo <- (t.tipo ?? "check"), unidade <- (t.unidade ?? ""), meta <- t.meta,
+                    saude <- (t.saude ?? "")
                 ))
             }
             for h in backup.historico {
@@ -160,8 +200,17 @@ enum BackupService {
                     totalTarefas <- h.totalTarefas, tarefasConcluidas <- h.tarefasConcluidas
                 ))
             }
+            for r in backup.registrosTarefa ?? [] {
+                try db.run(registros.insert(tarefaId <- r.tarefaId, data <- r.data, valor <- r.valor))
+            }
             for p in backup.pausas {
                 try db.run(pausas.insert(id <- p.id, rotinaId <- p.rotinaId, inicio <- p.inicio, fim <- p.fim))
+            }
+            for p in backup.pulos ?? [] {
+                try db.run(pulos.insert(rotinaId <- p.rotinaId, periodo <- p.periodo))
+            }
+            for c in backup.conclusoes ?? [] {
+                try db.run(conclusoes.insert(tarefaId <- c.tarefaId, periodo <- c.periodo))
             }
         }
     }

@@ -34,7 +34,7 @@ struct ComemoracaoView: View {
             VStack(spacing: 10) {
                 Image(systemName: "checkmark.seal.fill")
                     .font(.system(size: 56))
-                    .foregroundColor(AppTheme.primary)
+                    .foregroundColor(Paleta.destaque)
                 Text("Rotina completa!")
                     .font(.title3.bold())
                 Text(subtitulo)
@@ -57,7 +57,7 @@ struct ComemoracaoView: View {
 
 private struct Confete: Identifiable {
     let id = UUID()
-    let cor: Color = [AppTheme.primary, .orange, .pink, .green, .yellow, .purple].randomElement()!
+    let cor: Color = [Paleta.destaque, Paleta.destaque.opacity(0.6), Color(.systemGray3), Color(.systemGray)].randomElement()!
     let tamanho = CGFloat.random(in: 6...11)
     let destino: CGSize = {
         let angulo = Double.random(in: 0..<(2 * .pi))

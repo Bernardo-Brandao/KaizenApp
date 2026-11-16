@@ -1,5 +1,6 @@
 import SwiftUI
 
+// Formulário pra criar uma rotina nova
 struct NovaRotinaView: View {
     @ObservedObject var viewModel: RotinaViewModel
     @Environment(\.dismiss) var dismiss
@@ -7,8 +8,6 @@ struct NovaRotinaView: View {
     @State private var nome = ""
     @State private var descricao = ""
     @State private var frequencia = "Diária"
-    @State private var lembreteAtivo = false
-    @State private var horarioLembrete = Date()
     @State private var categoriaId: Int64?
     @State private var diaLembrete = 1
     @State private var icone = ""
@@ -53,12 +52,7 @@ struct NovaRotinaView: View {
                 }
             }
 
-            LembreteSection(
-                frequencia: frequencia,
-                lembreteAtivo: $lembreteAtivo,
-                horario: $horarioLembrete,
-                dia: $diaLembrete
-            )
+            LembreteSection(frequencia: frequencia, dia: $diaLembrete)
 
             Section {
                 Button("Salvar rotina") {
@@ -74,16 +68,13 @@ struct NovaRotinaView: View {
     }
 
     func salvar() {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm"
-        let horarioTexto = lembreteAtivo ? formatter.string(from: horarioLembrete) : ""
-
+        // Os horários dos lembretes ficam em cada tarefa
         viewModel.adicionar(
             nome: nome,
             descricao: descricao,
             frequencia: frequencia,
-            horarioLembrete: horarioTexto,
-            lembreteAtivo: lembreteAtivo,
+            horarioLembrete: "",
+            lembreteAtivo: false,
             diaLembrete: diaLembrete,
             categoriaId: categoriaId,
             icone: icone,

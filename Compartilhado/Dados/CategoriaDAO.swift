@@ -1,6 +1,7 @@
 import Foundation
 import SQLite
 
+// Acesso à tabela de categorias (ex.: Saúde, Trabalho) no banco SQLite
 class CategoriaDAO {
     let db = DatabaseManager.shared.db
     let table = Table("categorias")

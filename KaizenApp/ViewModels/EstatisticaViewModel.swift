@@ -1,9 +1,11 @@
 import Foundation
 import Combine
 
+// Estatísticas de uma rotina: sequência atual, recorde, média de conclusão e mapa de calor.
+// Dias de folga, pausados ou pulados são neutros: não contam nem quebram a sequência
 class EstatisticasViewModel: ObservableObject {
     @Published var historico: [HistoricoDia] = []
-    @Published var periodosPausados: Set<String> = []   // inícios de período em que a rotina esteve pausada
+    @Published var periodosPausados: Set<String> = []   // inícios de período pausados ou pulados (neutros)
     private let dao = HistoricoDAO()
     private let rotinaId: Int64
     let frequencia: String
@@ -23,7 +25,10 @@ class EstatisticasViewModel: ObservableObject {
     func carregar() {
         historico = dao.listarPorRotina(rotinaId)
 
+        // Pulados entram como pausados: os dois são neutros na sequência e na média
+        let pulados = PuloDAO().periodos(rotinaId: rotinaId).map { DataUtil.inicioPeriodo($0, frequencia: frequencia) }
         periodosPausados = Self.periodosPausados(PausaDAO().listar(rotinaId: rotinaId), frequencia: frequencia)
+            .union(pulados)
     }
 
     // Todo período que teve pelo menos um dia de pausa fica "neutro"
