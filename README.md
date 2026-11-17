@@ -36,7 +36,7 @@ Integrantes: Bernardo Brandão, Marco Antônio Barro Tortelli e Bruno Baldiga.
 
 1. Clone o repositório:
    ```bash
-   git clone https://github.com/BernardoBrandao11/KaizenApp.git
+   git clone https://github.com/Bernardo-Brandao/KaizenApp.git
    ```
 2. Abra o arquivo `KaizenApp.xcodeproj` no Xcode.
 3. Espere o Xcode baixar a dependência SQLite.swift (Swift Package Manager faz isso sozinho na primeira abertura).
