@@ -1,7 +1,5 @@
 import SwiftUI
 
-// Selo "Rotina completa!" com confetes, mostrado por cima da tela da rotina.
-// Quem mostra é responsável por esconder (DetalheRotinaView some com ela depois de ~2s).
 struct ComemoracaoView: View {
     let frequencia: String
 
@@ -16,7 +14,6 @@ struct ComemoracaoView: View {
         }
     }
 
-    // Confetes: posição final, cor e tamanho sorteados uma vez
     private let confetes: [Confete] = (0..<28).map { _ in Confete() }
 
     var body: some View {

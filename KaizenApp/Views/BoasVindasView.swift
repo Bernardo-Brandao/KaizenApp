@@ -1,7 +1,5 @@
 import SwiftUI
 
-// Boas-vindas na primeira abertura: o que é o Kaizen, como ele funciona, os lembretes
-// e um modelo de rotina pra começar. Termina chamando `aoTerminar` com a aba pra onde ir.
 struct BoasVindasView: View {
     let aoTerminar: (KaizenAppApp.Aba) -> Void
 
@@ -19,7 +17,6 @@ struct BoasVindasView: View {
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
 
-                // Pontinhos da página atual, na cor do app
                 HStack(spacing: 6) {
                     ForEach(0..<4) { indice in
                         Capsule()
@@ -42,8 +39,6 @@ struct BoasVindasView: View {
         }
         .interactiveDismissDisabled()
     }
-
-    // MARK: - Páginas
 
     private var apresentacao: some View {
         pagina(botao: "Começar", acao: avancar) {
@@ -100,9 +95,6 @@ struct BoasVindasView: View {
         }
     }
 
-    // MARK: - Peças
-
-    // Página com conteúdo centralizado e botão principal embaixo (o último abre os modelos)
     private func pagina<Conteudo: View>(botao: String, acao: @escaping () -> Void, destinoDoBotao: Bool = false,
                                         secundario: (String, () -> Void)? = nil,
                                         @ViewBuilder conteudo: () -> Conteudo) -> some View {

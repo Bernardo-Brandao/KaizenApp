@@ -2,15 +2,14 @@ import Foundation
 import Testing
 @testable import KaizenApp
 
-// Rotinas e tarefas em dias específicos ("hoje" = terça 2026-10-20; sexta = 2026-10-16 e 2026-10-23)
 @MainActor
 struct DiasSemanaTests {
     @Test func codificarENormalizar() {
         #expect(DiasSemana.codificar([6, 2]) == "2,6")
         #expect(DiasSemana.decodificar("2,6") == [2, 6])
-        #expect(DiasSemana.codificar(DiasSemana.todos) == "")      // todos = vazio
+        #expect(DiasSemana.codificar(DiasSemana.todos) == "")
         #expect(DiasSemana.decodificar("") == [])
-        #expect(DiasSemana.decodificar("0,9,x,3") == [3])            // ignora lixo
+        #expect(DiasSemana.decodificar("0,9,x,3") == [3])
     }
 
     @Test func descricao() {
@@ -24,11 +23,10 @@ struct DiasSemanaTests {
     @Test func rotinaSoDeSexta() {
         let rotina = Rotina(id: 1, nome: "Sexta", descricao: "", frequencia: "Diária", ativa: true,
                             horarioLembrete: "", lembreteAtivo: false, diasSemana: [6])
-        #expect(rotina.programada(em: "2026-10-16"))     // sexta
-        #expect(!rotina.programada(em: "2026-10-20"))    // terça
+        #expect(rotina.programada(em: "2026-10-16"))
+        #expect(!rotina.programada(em: "2026-10-20"))
         #expect(rotina.frequenciaDescrita == "Diária · Sex")
 
-        // Semanal ignora os dias
         var semanal = rotina
         semanal.frequencia = "Semanal"
         #expect(semanal.programada(em: "2026-10-20"))
@@ -43,12 +41,10 @@ struct DiasSemanaTests {
     }
 
     @Test func folgaNaoQuebraASequencia() {
-        // Rotina de seg, qua e sex; completa nas sextas 09 e 16 e na segunda 12, quarta 14
         let completos: Set = ["2026-10-09", "2026-10-12", "2026-10-14", "2026-10-16"]
         let streak = EstatisticasViewModel.calcularStreak(completos: completos, pausados: [], frequencia: "Diária",
                                                           hoje: "2026-10-17", diasSemana: [2, 4, 6])
         #expect(streak == 4)
-        // Sem os dias, os buracos (sáb, dom, ter, qui) quebram
         let semDias = EstatisticasViewModel.calcularStreak(completos: completos, pausados: [], frequencia: "Diária",
                                                            hoje: "2026-10-17")
         #expect(semDias == 1)
@@ -59,16 +55,15 @@ struct DiasSemanaTests {
     @Test func lembreteSoNosDiasDaRotina() {
         var calendario = Calendar(identifier: .gregorian)
         calendario.timeZone = TimeZone(identifier: "UTC")!
-        let inicio = calendario.date(from: DateComponents(year: 2026, month: 10, day: 20, hour: 8))!   // terça
+        let inicio = calendario.date(from: DateComponents(year: 2026, month: 10, day: 20, hour: 8))!
         let datas = NotificationManager.proximasDatas(frequencia: "Diária", diaLembrete: 1, hora: 9, minuto: 0,
                                                       aPartirDe: inicio, quantidade: 3, diasSemana: [6],
                                                       calendario: calendario)
         let dias = datas.map { calendario.component(.day, from: $0) }
-        #expect(dias == [23, 30, 6])   // as próximas três sextas
+        #expect(dias == [23, 30, 6])
     }
 
     @Test func resumoSemanalContaSoDiasProgramados() {
-        // Rotina só de sexta, completa na sexta 16
         let sexta = DadosRotinaSemana(nome: "Sexta", icone: "🏋️", frequencia: "Diária",
                                       historico: [HistoricoDia(id: 1, rotinaId: 1, data: "2026-10-16",
                                                                totalTarefas: 5, tarefasConcluidas: 5)],

@@ -2,14 +2,12 @@ import SwiftUI
 import LocalAuthentication
 import Combine
 
-// Bloqueio do app com Face ID (se falhar, o iPhone oferece o código).
-// Ativado em Ajustes; o app trava ao ir para o segundo plano e pede de novo ao voltar.
 @MainActor
 final class Bloqueio: ObservableObject {
     static let chaveAtivo = "bloqueioFaceID"
 
     @Published private(set) var bloqueado: Bool
-    private var pedirAoAtivar: Bool     // só pede sozinho depois de abrir ou voltar do segundo plano
+    private var pedirAoAtivar: Bool
     private var autenticando = false
 
     init() {
@@ -26,7 +24,6 @@ final class Bloqueio: ObservableObject {
         pedirAoAtivar = true
     }
 
-    // O app voltou a ficar ativo: pede o Face ID uma vez (cancelar não fica pedindo de novo)
     func aoFicarAtivo() async {
         guard pedirAoAtivar else { return }
         pedirAoAtivar = false
@@ -35,7 +32,6 @@ final class Bloqueio: ObservableObject {
 
     func desbloquear() async {
         guard bloqueado, !autenticando else { return }
-        // Sem código configurado no iPhone não há como autenticar: não deixa a pessoa presa fora
         guard Self.disponivel else {
             bloqueado = false
             return
@@ -47,8 +43,6 @@ final class Bloqueio: ObservableObject {
         }
     }
 
-    // MARK: - Autenticação
-
     static var disponivel: Bool {
         LAContext().canEvaluatePolicy(.deviceOwnerAuthentication, error: nil)
     }
@@ -59,7 +53,6 @@ final class Bloqueio: ObservableObject {
         return (try? await contexto.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: motivo)) ?? false
     }
 
-    // "Face ID", "Touch ID" ou "código", conforme o aparelho
     static var nomeBiometria: String {
         let contexto = LAContext()
         _ = contexto.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: nil)
@@ -78,7 +71,6 @@ final class Bloqueio: ObservableObject {
     }
 }
 
-// Tela por cima do app enquanto está bloqueado: o sol do ícone e o botão de desbloquear
 struct TelaBloqueio: View {
     let aoDesbloquear: () -> Void
 

@@ -1,8 +1,5 @@
 import SwiftUI
 
-// Mapa de calor dos últimos 12 meses (estilo GitHub).
-// Diária: uma coluna por semana (domingo em cima), rolando na horizontal.
-// Semanal: uma célula por semana. Mensal: uma célula por mês.
 struct MapaCalorView: View {
     let celulas: [CelulaMapa]
     let frequencia: String
@@ -22,10 +19,7 @@ struct MapaCalorView: View {
         }
     }
 
-    // MARK: - Layouts
-
     private var gradeDiaria: some View {
-        // As células já começam num domingo, então cada bloco de 7 é uma semana
         let semanas = stride(from: 0, to: celulas.count, by: 7).map {
             Array(celulas[$0..<min($0 + 7, celulas.count)])
         }
@@ -46,7 +40,7 @@ struct MapaCalorView: View {
                 }
             }
         }
-        .defaultScrollAnchor(.trailing)   // abre mostrando os dias mais recentes
+        .defaultScrollAnchor(.trailing)
     }
 
     private var gradeSemanal: some View {
@@ -72,8 +66,6 @@ struct MapaCalorView: View {
         }
     }
 
-    // MARK: - Célula e legenda
-
     private func quadrado(_ celula: CelulaMapa) -> some View {
         RoundedRectangle(cornerRadius: 3)
             .fill(cor(celula))
@@ -98,7 +90,6 @@ struct MapaCalorView: View {
         .accessibilityHidden(true)
     }
 
-    // Sem registro → vazio; pausado e não completo → cinza; senão, intensidade pelo percentual
     private func cor(_ celula: CelulaMapa) -> Color {
         if celula.pausado && !celula.completo { return Color.secondary.opacity(0.3) }
         guard let percentual = celula.percentual else { return AppTheme.cardBackground }
@@ -114,9 +105,6 @@ struct MapaCalorView: View {
         }
     }
 
-    // MARK: - Rótulos
-
-    // Mostra o mês na coluna onde ele começa (e na primeira coluna)
     private func rotuloMes(semana: [CelulaMapa], primeira: Bool) -> String {
         let inicioDeMes = semana.first { $0.periodo.hasSuffix("-01") }
         guard let referencia = inicioDeMes ?? (primeira ? semana.first : nil),

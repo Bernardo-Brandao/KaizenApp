@@ -1,7 +1,5 @@
 import SwiftUI
 
-// Lembrete de uma tarefa: chave liga/desliga e, ligado, o seletor de hora.
-// Guarda como "HH:mm" (vazio = sem lembrete).
 struct CampoHorario: View {
     @Binding var horario: String
     var titulo = "Lembrete"
@@ -17,7 +15,6 @@ struct CampoHorario: View {
     private var ligado: Binding<Bool> {
         Binding(
             get: { !horario.isEmpty },
-            // Ao ligar, sugere a próxima hora cheia
             set: { liga in horario = liga ? Self.formato.string(from: Self.proximaHoraCheia()) : "" }
         )
     }
@@ -46,7 +43,6 @@ struct CampoHorario: View {
     }
 }
 
-// Etiqueta "🔔 07:30" pra mostrar o horário de uma tarefa
 struct EtiquetaHorario: View {
     let horario: String
     var cor: Color = .secondary
@@ -63,13 +59,11 @@ struct EtiquetaHorario: View {
     }
 }
 
-// Tipo da tarefa: marcar (checkbox), valor (anotar um número, com unidade e meta opcional)
-// ou vezes (contar quantas vezes fez no período, com a meta de vezes)
 struct CampoTipoTarefa: View {
     @Binding var tipo: String
     @Binding var unidade: String
-    @Binding var meta: String   // texto, pra aceitar "1,5"
-    @Binding var saude: String  // métrica do app Saúde (vazio = anotar à mão)
+    @Binding var meta: String
+    @Binding var saude: String
     var frequencia = "Diária"
 
     var body: some View {
@@ -91,7 +85,6 @@ struct CampoTipoTarefa: View {
                 }
                 .onChange(of: saude) { _, nova in
                     guard let metrica = MetricaSaude(rawValue: nova) else { return }
-                    // Unidade da métrica e uma meta sugerida (se ainda não tiver)
                     unidade = metrica.unidade
                     if meta.isEmpty { meta = NumeroUtil.formatar(metrica.metaSugerida) }
                     Task { await SaudeService.autorizar([metrica]) }
@@ -107,7 +100,6 @@ struct CampoTipoTarefa: View {
         }
     }
 
-    // "por dia", "na semana", "no mês"
     static func periodo(_ frequencia: String) -> String {
         switch frequencia {
         case "Semanal": "na semana"

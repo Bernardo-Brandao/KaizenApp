@@ -1,6 +1,5 @@
 import Foundation
 
-// Números das tarefas de valor no formato brasileiro: mostra "1,5" e aceita "1,5" ou "1.5"
 enum NumeroUtil {
     private static let formatter: NumberFormatter = {
         let formatter = NumberFormatter()

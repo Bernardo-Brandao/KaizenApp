@@ -1,8 +1,6 @@
 import Foundation
 import SQLite
 
-// Backup completo do banco num JSON: exportar gera o arquivo, importar substitui todos os dados.
-// O formato tem estruturas próprias (e não os Models) pra continuar estável se os Models mudarem.
 struct Backup: Codable {
     static let versaoAtual = 1
 
@@ -13,9 +11,9 @@ struct Backup: Codable {
     var tarefas: [TarefaBackup]
     var historico: [HistoricoBackup]
     var pausas: [PausaBackup]
-    var registrosTarefa: [RegistroTarefaBackup]? = nil   // opcional: backups de antes das tarefas de valor
-    var pulos: [PuloBackup]? = nil                       // opcional: backups de antes do "Pular hoje"
-    var conclusoes: [ConclusaoBackup]? = nil             // opcional: backups de antes das conclusões por dia
+    var registrosTarefa: [RegistroTarefaBackup]? = nil
+    var pulos: [PuloBackup]? = nil
+    var conclusoes: [ConclusaoBackup]? = nil
 
     struct CategoriaBackup: Codable, Equatable {
         var id: Int64, nome: String, corHex: String
@@ -23,12 +21,12 @@ struct Backup: Codable {
     struct RotinaBackup: Codable, Equatable {
         var id: Int64, nome: String, descricao: String, frequencia: String, ativa: Bool
         var horarioLembrete: String, lembreteAtivo: Bool, categoriaId: Int64?, diaLembrete: Int
-        var icone: String? = nil   // opcional: backups de antes do emoji não têm essa chave
-        var diasSemana: String? = nil   // opcional: backups de antes dos dias específicos
+        var icone: String? = nil
+        var diasSemana: String? = nil
     }
     struct TarefaBackup: Codable, Equatable {
         var id: Int64, rotinaId: Int64, nome: String, ordem: Int, dataConclusao: String
-        var nota: String? = nil   // opcional: backups de antes das notas não têm essa chave
+        var nota: String? = nil
         var diasSemana: String? = nil
         var horario: String? = nil
         var tipo: String? = nil
@@ -66,7 +64,6 @@ enum BackupErro: LocalizedError {
 }
 
 enum BackupService {
-    // Tabelas e colunas, com os mesmos nomes do DatabaseManager
     private static let categorias = Table("categorias")
     private static let rotinas = Table("rotinas")
     private static let tarefas = Table("tarefas")
@@ -106,8 +103,6 @@ enum BackupService {
     private static let pulos = Table("pulos")
     private static let conclusoes = Table("conclusoes")
     private static let periodo = Expression<String>("periodo")
-
-    // MARK: - Exportar
 
     static func gerar(db: Connection? = DatabaseManager.shared.db) throws -> Backup {
         guard let db else { throw BackupErro.semBanco }
@@ -154,8 +149,6 @@ enum BackupService {
         return try encoder.encode(backup)
     }
 
-    // MARK: - Importar
-
     static func ler(_ dados: Data) throws -> Backup {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
@@ -166,8 +159,6 @@ enum BackupService {
         return backup
     }
 
-    // Substitui todos os dados pelos do backup, mantendo os ids originais.
-    // Tudo numa transação: se qualquer insert falhar, o banco volta ao estado anterior.
     static func restaurar(_ backup: Backup, db: Connection? = DatabaseManager.shared.db) throws {
         guard let db else { throw BackupErro.semBanco }
         try db.transaction {

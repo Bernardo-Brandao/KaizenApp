@@ -1,6 +1,5 @@
 import SwiftUI
 
-// Editar uma tarefa: nome, nota e (em rotinas diárias) os dias em que ela aparece
 struct EditarTarefaView: View {
     let tarefa: Tarefa
     let mostrarDias: Bool

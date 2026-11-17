@@ -1,14 +1,11 @@
 import SwiftUI
 
 @main
-// Ponto de entrada do app: monta as abas, a barra inferior, o bloqueio com Face ID,
-// as boas-vindas e trata os links que vêm do widget e das notificações
 struct KaizenAppApp: App {
     @State private var abaSelecionada = Aba.hoje
-    @State private var rotinaParaAbrir: Int64?   // vem de um link kaizen://rotina/<id> (widget)
-    @State private var mostrarSemana = false     // kaizen://semana (notificação do resumo semanal)
+    @State private var rotinaParaAbrir: Int64?
+    @State private var mostrarSemana = false
     @StateObject private var bloqueio = Bloqueio()
-    // Boas-vindas só pra quem está começando (sem nenhuma rotina); quem já usa não vê
     @AppStorage("boasVindasVistas") private var boasVindasVistas = false
     @State private var mostrarBoasVindas = false
     @Environment(\.scenePhase) private var scenePhase
@@ -17,7 +14,6 @@ struct KaizenAppApp: App {
 
     init() {
         NotificacaoDelegate.shared.registrar()
-        // Na primeira abertura a permissão é pedida nas boas-vindas, no momento certo
         if UserDefaults.standard.bool(forKey: "boasVindasVistas") {
             NotificationManager.shared.solicitarPermissao()
         }
@@ -45,7 +41,6 @@ struct KaizenAppApp: App {
                     .tag(Aba.ajustes)
             }
             .tint(Paleta.destaque)
-            // Bloqueio com Face ID (ativado em Ajustes)
             .overlay {
                 if bloqueio.bloqueado {
                     TelaBloqueio { Task { await bloqueio.desbloquear() } }
@@ -73,13 +68,11 @@ struct KaizenAppApp: App {
                 switch fase {
                 case .background:
                     bloqueio.bloquear()
-                    WidgetSync.atualizar()   // o widget pega o estado mais recente ao sair do app
+                    WidgetSync.atualizar()
                 case .active: Task { await bloqueio.aoFicarAtivo() }
                 default: break
                 }
             }
-            // Links: kaizen://rotinas abre a lista; kaizen://rotina/<id> abre a rotina;
-            // kaizen://semana abre o resumo da semana
             .onOpenURL { url in
                 guard url.scheme == "kaizen" else { return }
                 if url.host == "hoje" {

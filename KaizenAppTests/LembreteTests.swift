@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import KaizenApp
 
-// Datas de lembrete calculadas num calendário fixo (UTC, domingo primeiro) pra não depender do aparelho
 @MainActor
 struct LembreteTests {
     private var calendario: Calendar {
@@ -26,7 +25,6 @@ struct LembreteTests {
     }
 
     @Test func diariaComecaHojeSeAindaNaoPassouDaHora() {
-        // Terça 20/10 às 08:00, lembrete às 09:30
         let datas = NotificationManager.proximasDatas(frequencia: "Diária", diaLembrete: 1, hora: 9, minuto: 30,
                                                       aPartirDe: data("2026-10-20", 8), quantidade: 3, calendario: calendario)
         #expect(dias(datas) == ["2026-10-20 09:30", "2026-10-21 09:30", "2026-10-22 09:30"])
@@ -39,7 +37,6 @@ struct LembreteTests {
     }
 
     @Test func semanalCaiNoDiaDaSemanaEscolhido() {
-        // diaLembrete 6 = sexta
         let datas = NotificationManager.proximasDatas(frequencia: "Semanal", diaLembrete: 6, hora: 18, minuto: 0,
                                                       aPartirDe: data("2026-10-20", 8), quantidade: 3, calendario: calendario)
         #expect(dias(datas) == ["2026-10-23 18:00", "2026-10-30 18:00", "2026-11-06 18:00"])
@@ -50,8 +47,6 @@ struct LembreteTests {
                                                       aPartirDe: data("2026-10-20", 8), quantidade: 3, calendario: calendario)
         #expect(dias(datas) == ["2026-11-05 10:00", "2026-12-05 10:00", "2027-01-05 10:00"])
     }
-
-    // MARK: - Lembretes por tarefa (terça 20/10 às 08:00 UTC; "hoje" = 2026-10-20)
 
     private var rotinaDiaria: Rotina {
         Rotina(id: 1, nome: "Manhã", descricao: "", frequencia: "Diária", ativa: true,
@@ -70,7 +65,6 @@ struct LembreteTests {
     }
 
     @Test func diaPuladoFicaSemLembrete() {
-        // Ter 20/10 às 08:00, lembrete às 09:00 por 3 dias, com quarta 21/10 pulada
         let planejados = NotificationManager.planejarLembretes(
             rotina: rotinaDiaria, tarefas: [tarefa(1, "Correr", "09:00")], aPartirDe: data("2026-10-20", 8),
             quantidadePorHorario: 3, periodosPulados: ["2026-10-21"], hoje: "2026-10-20", calendario: calendario)
@@ -93,14 +87,12 @@ struct LembreteTests {
             tarefa(1, "Água", "09:00", feita: true), tarefa(2, "Alongar", "09:00"),
             tarefa(3, "Ler", "21:00", feita: true),
         ], dias: 2)
-        // Hoje: 09:00 só com Alongar; 21:00 não toca. Amanhã: tudo de novo
         #expect(dias(lembretes.map(\.data)) == ["2026-10-20 09:00", "2026-10-21 09:00", "2026-10-21 21:00"])
         #expect(lembretes[0].tarefas.map(\.nome) == ["Alongar"])
         #expect(lembretes[1].tarefas.map(\.nome) == ["Água", "Alongar"])
     }
 
     @Test func tarefaSoDeSextaSoTocaNaSexta() {
-        // Terça 20 → próximos dias 20, 21, 22, 23 (sexta)
         let lembretes = planejar(rotinaDiaria, [tarefa(1, "Perna", "18:00", dias: [6])], dias: 4)
         #expect(dias(lembretes.map(\.data)) == ["2026-10-23 18:00"])
     }
@@ -115,9 +107,8 @@ struct LembreteTests {
     @Test func semanalUsaODiaDaRotinaEOHorarioDaTarefa() {
         var semanal = rotinaDiaria
         semanal.frequencia = "Semanal"
-        semanal.diaLembrete = 7   // sábado
+        semanal.diaLembrete = 7
         let lembretes = planejar(semanal, [tarefa(1, "Faxina", "10:00"), tarefa(2, "Mercado", "16:30")], dias: 1)
         #expect(dias(lembretes.map(\.data)) == ["2026-10-24 10:00", "2026-10-24 16:30"])
     }
 }
-

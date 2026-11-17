@@ -1,22 +1,17 @@
 import Foundation
 
-// O que o widget mostra de cada rotina. Montado direto do banco (que fica no App Group),
-// então o widget sempre vê o mesmo que o app.
 struct ResumoRotina: Identifiable {
     let id: Int64
     let nome: String
     let tarefas: [ResumoTarefa]
-    let corHex: String?      // cor da categoria, se tiver
-    let validoAte: Date      // início do próximo período — dali em diante o progresso zera
+    let corHex: String?
+    let validoAte: Date
     var frequencia: String = "Diária"
-    var icone: String = ""   // emoji da rotina (vazio = sem emoji)
-    var programadaHoje = true  // false = dia de folga (rotina diária com dias escolhidos) ou período pulado
+    var icone: String = ""
+    var programadaHoje = true
 
     var total: Int { tarefas.count }
 
-    // Progresso considerando que o período pode virar entre uma atualização do widget e outra.
-    // Obs.: comparo datas só com "<". O ">=" e o "<=" de Date não existem no iOS 27.2 beta
-    // e faziam o app fechar ao abrir o Resumo (e o widget travar).
     func concluidas(em agora: Date) -> Int {
         agora < validoAte ? tarefas.filter(\.concluida).count : 0
     }
@@ -32,11 +27,10 @@ struct ResumoTarefa: Identifiable {
     let concluida: Bool
     var nota: String = ""
     var horario: String = ""
-    var valorTexto: String? = nil   // tarefa de valor: "1,5 / 3 L" (nil = tarefa de marcar)
+    var valorTexto: String? = nil
 }
 
 enum ResumoWidget {
-    // Rotinas ativas, na mesma ordem da lista do app
     static func carregar() -> [ResumoRotina] {
         let categorias = CategoriaDAO().listarTodas()
         let tarefaDao = TarefaDAO()

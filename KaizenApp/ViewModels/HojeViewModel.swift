@@ -1,21 +1,18 @@
 import Foundation
 import Combine
 
-// Uma tarefa na tela Hoje, com a rotina de onde ela vem
 struct ItemHoje: Identifiable {
     let tarefa: Tarefa
     let rotina: Rotina
-    let corHex: String?      // cor da categoria da rotina, se tiver
+    let corHex: String?
     var id: Int64 { tarefa.id ?? 0 }
 }
 
-// Todas as tarefas do dia, de todas as rotinas, numa lista só (as das rotinas diárias de hoje),
-// mais as pendentes da semana e do mês
 class HojeViewModel: ObservableObject {
     @Published var doDia: [ItemHoje] = []
     @Published var daSemana: [ItemHoje] = []
     @Published var doMes: [ItemHoje] = []
-    @Published var puladas: [Rotina] = []    // rotinas puladas no período atual (ficam fora da lista)
+    @Published var puladas: [Rotina] = []
 
     func carregar() {
         let hoje = DataUtil.hoje()
@@ -46,7 +43,6 @@ class HojeViewModel: ObservableObject {
         self.puladas = puladas
     }
 
-    // Pular (ou voltar) a rotina no período atual
     func alternarPulo(_ rotina: Rotina) {
         guard let id = rotina.id else { return }
         let periodo = DataUtil.periodoAtual(frequencia: rotina.frequencia)
@@ -60,7 +56,6 @@ class HojeViewModel: ObservableObject {
         carregar()
     }
 
-    // Por horário (as sem horário no fim), mantendo a ordem das tarefas dentro de cada rotina
     static func ordenar(_ itens: [ItemHoje]) -> [ItemHoje] {
         itens.enumerated().sorted { a, b in
             let ha = a.element.tarefa.horario, hb = b.element.tarefa.horario
@@ -72,8 +67,6 @@ class HojeViewModel: ObservableObject {
     }
 
     var feitasHoje: Int { doDia.filter(\.tarefa.concluidaHoje).count }
-
-    // MARK: - Ações (retornam true quando completaram a rotina, pra comemorar)
 
     @discardableResult
     func alternar(_ item: ItemHoje) -> Bool {

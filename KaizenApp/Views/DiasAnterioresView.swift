@@ -1,7 +1,5 @@
 import SwiftUI
 
-// "Corrigir dias anteriores": os últimos períodos da rotina; tocar num período abre as tarefas dele
-// pra marcar o que esqueceu, tarefa por tarefa, ou pular (neutro: não conta nem quebra a sequência)
 struct DiasAnterioresView: View {
     let rotina: Rotina
     var cor: Color = Paleta.destaque
@@ -82,8 +80,6 @@ struct DiasAnterioresView: View {
         }
     }
 
-    // MARK: - Dados
-
     private func carregar() {
         guard let id = rotina.id else { return }
         let estatisticas = EstatisticasViewModel(rotinaId: id, frequencia: rotina.frequencia, diasSemana: rotina.diasSemana)
@@ -106,7 +102,6 @@ struct DiasAnterioresView: View {
         }
     }
 
-    // Os períodos antes do atual, do mais recente pro mais antigo: 14 dias, 8 semanas ou 6 meses
     static func periodosAnteriores(frequencia: String, hoje: String = DataUtil.hoje()) -> [String] {
         let quantidade = frequencia == "Semanal" ? 8 : frequencia == "Mensal" ? 6 : 14
         var periodos: [String] = []
@@ -118,7 +113,6 @@ struct DiasAnterioresView: View {
         return periodos
     }
 
-    // "Ontem", "Quarta, 21 de out", "Semana de 12 de out", "Setembro de 2026"
     static func titulo(_ periodo: String, frequencia: String, hoje: String = DataUtil.hoje()) -> String {
         guard let data = DataUtil.data(de: periodo) else { return periodo }
         let ptBR = Locale(identifier: "pt_BR")

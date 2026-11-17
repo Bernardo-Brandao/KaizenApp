@@ -1,20 +1,18 @@
 import SwiftUI
 
-// Cores do app e dos widgets: tons neutros e um único destaque, o coral do sol do ícone
 enum Paleta {
     static let destaque = Color(UIColor { traits in
         traits.userInterfaceStyle == .dark
-            ? UIColor(red: 0.96, green: 0.47, blue: 0.36, alpha: 1)   // F5785C
-            : UIColor(red: 0.89, green: 0.37, blue: 0.24, alpha: 1)   // E35E3D
+            ? UIColor(red: 0.96, green: 0.47, blue: 0.36, alpha: 1)
+            : UIColor(red: 0.89, green: 0.37, blue: 0.24, alpha: 1)
     })
     static let trilha = Color(.tertiarySystemFill)
 }
 
-// Progresso num círculo: contorno fino e uma fatia que vai enchendo (sem anel grosso)
 struct CirculoProgresso: View {
     let progresso: Double
     var cor: Color = Paleta.destaque
-    var animado = true   // no widget não há animação: desenha direto o valor final
+    var animado = true
 
     @State private var exibido: Double = 0
 
@@ -45,7 +43,6 @@ struct CirculoProgresso: View {
     }
 }
 
-// Fatia de pizza a partir do meio-dia, no sentido horário
 struct Fatia: Shape {
     var fracao: Double
 
@@ -66,7 +63,6 @@ struct Fatia: Shape {
     }
 }
 
-// Barra fina de progresso, para os números grandes
 struct BarraProgresso: View {
     let progresso: Double
     var cor: Color = Paleta.destaque

@@ -1,7 +1,5 @@
 import Foundation
 
-// Marca/desmarca uma tarefa fora da tela da rotina (usado pelo widget interativo).
-// Faz o mesmo que o TarefaViewModel: grava a conclusão, atualiza o histórico do período e o lembrete.
 enum ConclusaoTarefa {
     static func alternar(tarefaId: Int64, rotinaId: Int64) {
         guard let rotina = RotinaDAO().buscar(id: rotinaId) else { return }
@@ -13,11 +11,9 @@ enum ConclusaoTarefa {
         dao.atualizar(tarefa, frequencia: rotina.frequencia)
 
         registrarHistorico(rotina)
-        // Completar a rotina cancela o lembrete do período (lembrete inteligente)
         NotificationManager.shared.atualizarLembrete(rotinaId: rotinaId)
     }
 
-    // "Marcar tudo como feito" (botão da notificação): conclui as tarefas que faltam no período
     static func concluirTodas(rotinaId: Int64) {
         guard let rotina = RotinaDAO().buscar(id: rotinaId) else { return }
         let dao = TarefaDAO()
@@ -29,7 +25,6 @@ enum ConclusaoTarefa {
         NotificationManager.shared.atualizarLembrete(rotinaId: rotinaId)
     }
 
-    // "Marcar como feito" na notificação de um horário: conclui só as tarefas daquele lembrete
     static func concluir(tarefaIds: [Int64], rotinaId: Int64) {
         guard let rotina = RotinaDAO().buscar(id: rotinaId) else { return }
         let dao = TarefaDAO()
@@ -41,7 +36,6 @@ enum ConclusaoTarefa {
         NotificationManager.shared.atualizarLembrete(rotinaId: rotinaId)
     }
 
-    // Anota o valor de uma tarefa de valor fora da tela da rotina (tela Hoje)
     static func registrarValor(_ tarefa: Tarefa, valor: Double, rotinaId: Int64) {
         guard let rotina = RotinaDAO().buscar(id: rotinaId) else { return }
         TarefaDAO().registrarValor(tarefa, valor: valor, frequencia: rotina.frequencia)
@@ -49,7 +43,6 @@ enum ConclusaoTarefa {
         NotificationManager.shared.atualizarLembrete(rotinaId: rotinaId)
     }
 
-    // Marcar: conclui. Valor: preenche a meta (sem meta não há o que preencher — fica como está)
     private static func concluir(_ tarefa: Tarefa, dao: TarefaDAO, frequencia: String) {
         if tarefa.ehValor {
             if let meta = tarefa.meta {
@@ -62,9 +55,6 @@ enum ConclusaoTarefa {
         }
     }
 
-    // MARK: - Períodos que já passaram ("Dias anteriores")
-
-    // Marca/desmarca uma tarefa num período passado e refaz o total daquele período no histórico
     static func alternar(_ tarefa: Tarefa, noPeriodo periodo: String, rotina: Rotina) {
         guard let tarefaId = tarefa.id else { return }
         TarefaDAO().definirConclusao(tarefaId: tarefaId, periodo: periodo, feita: !tarefa.concluidaHoje)
@@ -76,7 +66,6 @@ enum ConclusaoTarefa {
         registrarHistorico(rotina, periodo: periodo)
     }
 
-    // Total de um período passado a partir das conclusões por tarefa
     static func registrarHistorico(_ rotina: Rotina, periodo: String) {
         guard let id = rotina.id else { return }
         let tarefas = TarefaDAO().listarNoPeriodo(id, frequencia: rotina.frequencia, periodo: periodo)
@@ -84,7 +73,6 @@ enum ConclusaoTarefa {
                                concluidas: tarefas.filter(\.concluidaHoje).count)
     }
 
-    // Progresso do período no histórico (não registra em dia de folga da rotina)
     private static func registrarHistorico(_ rotina: Rotina) {
         guard let id = rotina.id, rotina.programada(em: DataUtil.hoje()) else { return }
         let tarefas = TarefaDAO().listarPorRotina(id, frequencia: rotina.frequencia)

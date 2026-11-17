@@ -1,6 +1,5 @@
 import SwiftUI
 
-// Formulário pra editar uma rotina já criada
 struct EditarRotinaView: View {
     @ObservedObject var viewModel: RotinaViewModel
     @Environment(\.dismiss) var dismiss
@@ -51,7 +50,6 @@ struct EditarRotinaView: View {
                 .pickerStyle(.inline)
             }
 
-            // Diária: em quais dias a rotina vale (nos outros, folga)
             if frequencia == "Diária" {
                 Section {
                     SeletorDiasSemana(dias: $diasSemana)
@@ -86,7 +84,7 @@ struct EditarRotinaView: View {
         atualizada.nome = nome
         atualizada.descricao = descricao
         atualizada.frequencia = frequencia
-        atualizada.lembreteAtivo = false   // os horários dos lembretes ficam em cada tarefa
+        atualizada.lembreteAtivo = false
         atualizada.categoriaId = categoriaId
         atualizada.diaLembrete = diaLembrete
         atualizada.icone = icone

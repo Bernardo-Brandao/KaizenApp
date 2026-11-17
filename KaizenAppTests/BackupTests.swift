@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import KaizenApp
 
-// Usa um banco em memória com o mesmo esquema do app — não toca nos dados reais
 @MainActor
 struct BackupTests {
     private func exemplo() -> Backup {
@@ -77,7 +76,6 @@ struct BackupTests {
     }
 
     @Test func leBackupAntigoSemNotas() throws {
-        // Formato de antes das notas: tarefa sem a chave "nota"
         let antigo = """
         {"versao": 1, "exportadoEm": "2026-10-22T12:00:00Z", "categorias": [], "pausas": [], "historico": [],
          "rotinas": [{"id": 1, "nome": "Manhã", "descricao": "", "frequencia": "Diária", "ativa": true,

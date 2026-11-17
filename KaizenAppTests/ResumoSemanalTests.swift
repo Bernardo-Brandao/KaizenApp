@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import KaizenApp
 
-// Semana de domingo 11/10 a sábado 17/10 de 2026; a anterior é 04/10 a 10/10
 @MainActor
 struct ResumoSemanalTests {
     private func dia(_ data: String, _ feitas: Int, de total: Int) -> HistoricoDia {
@@ -10,32 +9,28 @@ struct ResumoSemanalTests {
     }
 
     private var manha: DadosRotinaSemana {
-        // Completa em 4 dos 7 dias; parcial no dia 16
         DadosRotinaSemana(nome: "Manhã", icone: "☀️", frequencia: "Diária", historico: [
             dia("2026-10-11", 2, de: 2), dia("2026-10-12", 2, de: 2), dia("2026-10-13", 2, de: 2),
             dia("2026-10-15", 2, de: 2), dia("2026-10-16", 1, de: 2),
-            dia("2026-10-05", 2, de: 2),   // semana anterior: 1 de 7
+            dia("2026-10-05", 2, de: 2),
         ])
     }
 
     private var faxina: DadosRotinaSemana {
-        // Semanal: registro gravado no domingo da semana
         DadosRotinaSemana(nome: "Faxina", icone: "🧹", frequencia: "Semanal",
                           historico: [dia("2026-10-11", 3, de: 3)])
     }
 
     @Test func taxaContaDiasESemanas() {
         let resumo = ResumoSemanal.calcular(rotinas: [manha, faxina], inicioSemana: "2026-10-11")
-        // 4 dias completos + 1 semana completa, de 7 + 1 possíveis
         #expect(resumo.taxa == 5.0 / 8.0)
         #expect(resumo.inicio == "2026-10-11")
         #expect(resumo.fim == "2026-10-17")
     }
 
-    // Dia pulado e não feito não conta: some das possíveis e vira "folga" na linha
     @Test func diaPuladoNaoPuxaATaxaPraBaixo() {
         var comPulo = manha
-        comPulo.pulados = ["2026-10-14"]   // quarta: não foi feita, mas foi pulada
+        comPulo.pulados = ["2026-10-14"]
         let resumo = ResumoSemanal.calcular(rotinas: [comPulo], inicioSemana: "2026-10-11")
         #expect(resumo.taxa == 4.0 / 6.0)
         #expect(resumo.linhas.first?.dias[3] == nil)
@@ -60,7 +55,6 @@ struct ResumoSemanalTests {
 
     @Test func comparaComASemanaAnterior() {
         let resumo = ResumoSemanal.calcular(rotinas: [manha], inicioSemana: "2026-10-11")
-        // 4/7 agora contra 1/7 antes
         #expect(abs((resumo.variacao ?? 0) - 3.0 / 7.0) < 0.0001)
     }
 
@@ -74,9 +68,7 @@ struct ResumoSemanalTests {
     }
 
     @Test func semanaPassadaEhODomingoAnterior() {
-        // Terça 20/10: a semana atual começa no domingo 18; a passada, no 11
         #expect(ResumoSemanalViewModel.semanaPassada(hoje: "2026-10-20") == "2026-10-11")
-        // No próprio domingo, a passada é a que acabou ontem
         #expect(ResumoSemanalViewModel.semanaPassada(hoje: "2026-10-18") == "2026-10-11")
     }
 

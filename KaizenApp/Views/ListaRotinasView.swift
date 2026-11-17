@@ -1,9 +1,8 @@
 import SwiftUI
 
-// Aba Rotinas: todas as rotinas agrupadas por categoria, com o progresso de cada uma
 struct ListaRotinasView: View {
     @StateObject var viewModel = RotinaViewModel()
-    @Binding var rotinaParaAbrir: Int64?            // pedido vindo de um link do widget
+    @Binding var rotinaParaAbrir: Int64?
     @State private var rotinaAberta: Rotina?
     @StateObject private var categoriaViewModel = CategoriaViewModel()
     @State private var busca = ""
@@ -17,7 +16,6 @@ struct ListaRotinasView: View {
         viewModel.rotinas.filter { busca.isEmpty || $0.nome.localizedCaseInsensitiveContains(busca) }
     }
 
-    // Rotinas ativas agrupadas por categoria (na ordem das categorias), com "Sem categoria" no fim
     private var grupos: [(categoria: Categoria?, rotinas: [Rotina])] {
         let ativas = rotinasFiltradas.filter(\.ativa)
         var resultado: [(categoria: Categoria?, rotinas: [Rotina])] = categoriaViewModel.categorias.compactMap { categoria in
@@ -37,8 +35,6 @@ struct ListaRotinasView: View {
         categoriaViewModel.categorias.first { $0.id == rotina.categoriaId }
     }
 
-    // Linha de uma rotina: nome, frequência, categoria e progresso (ou "Pausada").
-    // Deslizar pra direita pausa/retoma; pra esquerda exclui.
     @ViewBuilder
     private func linha(_ rotina: Rotina) -> some View {
         NavigationLink(destination: DetalheRotinaView(rotina: rotina)) {
@@ -86,7 +82,6 @@ struct ListaRotinasView: View {
         }
     }
 
-    // Abre a rotina pedida pelo link e limpa o pedido
     private func abrirRotinaPedida() {
         guard let id = rotinaParaAbrir else { return }
         rotinaParaAbrir = nil
@@ -155,7 +150,6 @@ struct ListaRotinasView: View {
                     .accessibilityLabel("Adicionar rotina")
                 }
             }
-            // Recarrega ao voltar pro app — se começou um período novo, o progresso zera
             .onChange(of: scenePhase) { _, fase in
                 if fase == .active { viewModel.carregar() }
             }
@@ -164,7 +158,6 @@ struct ListaRotinasView: View {
             }
             .navigationDestination(isPresented: $mostrarModelos) {
                 ModelosView(viewModel: viewModel) { id in
-                    // Volta da galeria e abre a página da rotina recém-criada
                     mostrarModelos = false
                     Task {
                         try? await Task.sleep(for: .milliseconds(450))
@@ -197,7 +190,6 @@ struct ListaRotinasView: View {
     }
 }
 
-// O "3/5" e um círculo que vai enchendo; vira um check quando completo
 struct ProgressoCirculo: View {
     let progresso: ProgressoRotina
     var cor: Color = Paleta.destaque

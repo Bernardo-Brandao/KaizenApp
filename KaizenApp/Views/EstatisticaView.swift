@@ -1,6 +1,5 @@
 import SwiftUI
 
-// Tela de estatísticas de uma rotina: números principais, últimos 7 períodos e mapa de calor
 struct EstatisticasView: View {
     let rotina: Rotina
     @StateObject private var viewModel: EstatisticasViewModel
@@ -16,7 +15,6 @@ struct EstatisticasView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                // Cabeçalho: emoji e nome, como a página da rotina
                 HStack(spacing: 12) {
                     Text(rotina.iconeExibido).font(.system(size: 40))
                     VStack(alignment: .leading, spacing: 2) {
@@ -26,7 +24,6 @@ struct EstatisticasView: View {
                 }
                 .padding(.top, 8)
 
-                // Cartões com os números principais
                 LazyVGrid(columns: colunas, spacing: 12) {
                     cartao("Sequência", icone: "flame.fill", corIcone: .secondary,
                            valor: "\(viewModel.streakAtual)", unidade: rotuloUnidade(viewModel.streakAtual))
@@ -38,14 +35,12 @@ struct EstatisticasView: View {
                            valor: "\(viewModel.periodosCompletos)", unidade: rotuloUnidade(viewModel.periodosCompletos))
                 }
 
-                // Últimos 7 períodos (dias, semanas ou meses)
                 secao(tituloGrafico) {
                     if viewModel.periodosRegistrados == 0 {
                         Text("Complete tarefas por alguns dias para começar a ver suas estatísticas aqui.")
                             .foregroundStyle(.secondary)
                             .font(.subheadline)
                     } else {
-                        // id pela data: dias sem registro não têm id no banco
                         HStack(alignment: .bottom, spacing: 10) {
                             ForEach(viewModel.ultimos7Periodos, id: \.data) { dia in
                                 barraDia(dia)
@@ -55,7 +50,6 @@ struct EstatisticasView: View {
                     }
                 }
 
-                // Mapa de calor dos últimos 12 meses
                 if viewModel.periodosRegistrados > 0 {
                     secao("Últimos 12 meses", detalhe: rotuloCompletosNoAno) {
                         MapaCalorView(celulas: viewModel.mapaDeCalor, frequencia: rotina.frequencia, cor: cor)
@@ -108,7 +102,6 @@ struct EstatisticasView: View {
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: Estilo.cantoCartao))
     }
 
-    // "dias", "semanas" ou "meses" (singular quando é 1)
     private func rotuloUnidade(_ valor: Int) -> String {
         let um = valor == 1
         switch rotina.frequencia {
@@ -135,7 +128,6 @@ struct EstatisticasView: View {
         }
     }
 
-    // `dia.data` é o início do período da barra
     @ViewBuilder
     private func barraDia(_ dia: HistoricoDia) -> some View {
         let ehAtual = dia.data == DataUtil.periodoAtual(frequencia: rotina.frequencia)
@@ -143,12 +135,10 @@ struct EstatisticasView: View {
         VStack(spacing: 6) {
             Spacer()
             if viewModel.periodosPausados.contains(dia.data) && !dia.completoNoDia {
-                // Período pausado: não conta nem quebra o streak
                 Image(systemName: "pause.circle")
                     .font(.caption)
                     .foregroundColor(.secondary)
             } else if dia.id == nil {
-                // Dia sem registro: só o contorno, pra mostrar o buraco na sequência
                 RoundedRectangle(cornerRadius: 4)
                     .stroke(Color.secondary.opacity(0.35), style: StrokeStyle(lineWidth: 1, dash: [3]))
                     .frame(height: 8)
@@ -166,7 +156,6 @@ struct EstatisticasView: View {
         .frame(maxWidth: .infinity)
     }
 
-    // Diária: dia da semana ("Seg"); Semanal: domingo que abre a semana ("12/10"); Mensal: mês ("Out")
     private func rotuloBarra(_ inicioPeriodo: String, atual: Bool) -> String {
         if atual { return rotina.frequencia == "Diária" ? "Hoje" : "Atual" }
         guard let data = DataUtil.data(de: inicioPeriodo) else { return "" }

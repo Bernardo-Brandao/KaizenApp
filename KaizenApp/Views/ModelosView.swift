@@ -1,9 +1,7 @@
 import SwiftUI
 
-// Galeria de modelos de rotina, como os templates do Notion
 struct ModelosView: View {
     @ObservedObject var viewModel: RotinaViewModel
-    // Chamado com o id da rotina criada (pra quem abriu a galeria decidir o que fazer)
     var aoCriar: (Int64) -> Void = { _ in }
 
     private let colunas = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
@@ -53,7 +51,6 @@ struct CartaoModelo: View {
     }
 }
 
-// Prévia do modelo no formato da página da rotina, com o botão pra adicionar
 struct ModeloDetalheView: View {
     let modelo: ModeloRotina
     @ObservedObject var viewModel: RotinaViewModel

@@ -1,7 +1,5 @@
 import SwiftUI
 
-// Um período que já passou (ontem, uma semana, um mês): as tarefas daquele período pra marcar o que
-// esqueceu, tarefa por tarefa. Cada mudança refaz o total do período no histórico (sequência e médias).
 struct DiaAnteriorView: View {
     let rotina: Rotina
     let periodo: String
@@ -9,7 +7,7 @@ struct DiaAnteriorView: View {
     let aoMudar: () -> Void
 
     @State private var tarefas: [Tarefa] = []
-    @State private var registroAntigo: HistoricoDia?   // total gravado antes do detalhe por tarefa existir
+    @State private var registroAntigo: HistoricoDia?
     @State private var pulado = false
     @State private var tarefaParaAnotar: Tarefa?
     @State private var toques = 0
@@ -79,8 +77,6 @@ struct DiaAnteriorView: View {
         }
     }
 
-    // MARK: - Ações
-
     private func tocar(_ tarefa: Tarefa) {
         toques += 1
         if tarefa.ehContagem && !tarefa.concluidaHoje {
@@ -110,8 +106,6 @@ struct DiaAnteriorView: View {
         WidgetSync.atualizar()
     }
 
-    // MARK: - Dados
-
     private func carregar() {
         guard let id = rotina.id else { return }
         let dao = TarefaDAO()
@@ -119,7 +113,6 @@ struct DiaAnteriorView: View {
         let registro = HistoricoDAO().listarPorRotina(id)
             .first { DataUtil.inicioPeriodo($0.data, frequencia: rotina.frequencia) == periodo }
 
-        // Período de antes do detalhe por tarefa: se ficou completo, todas foram feitas — dá pra preencher
         if let registro, registro.completoNoDia, lista.contains(where: { !$0.concluidaHoje }) {
             for tarefa in lista where !tarefa.concluidaHoje {
                 dao.definirConclusao(tarefaId: tarefa.id ?? -1, periodo: periodo, feita: true)
@@ -128,7 +121,6 @@ struct DiaAnteriorView: View {
         }
         tarefas = lista
 
-        // Total antigo maior que o que há de detalhe: avisa que não dá pra saber quais foram
         let detalhadas = lista.filter(\.concluidaHoje).count
         registroAntigo = registro.flatMap { $0.tarefasConcluidas > detalhadas ? $0 : nil }
         pulado = PuloDAO().periodos(rotinaId: id).contains(periodo)

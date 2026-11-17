@@ -1,6 +1,5 @@
 import AppIntents
 
-// A rotina como a Siri e o app Atalhos enxergam: só id e nome
 struct RotinaEntity: AppEntity {
     static let typeDisplayRepresentation: TypeDisplayRepresentation = "Routine"
     static let defaultQuery = RotinaQuery()
@@ -18,7 +17,6 @@ struct RotinaEntity: AppEntity {
     }
 }
 
-// Como a Siri encontra as rotinas: por id, pelo nome falado e as sugestões (rotinas ativas)
 struct RotinaQuery: EntityStringQuery {
     func entities(for identifiers: [Int]) async throws -> [RotinaEntity] {
         await rotinasAtivas().filter { identifiers.contains($0.id) }

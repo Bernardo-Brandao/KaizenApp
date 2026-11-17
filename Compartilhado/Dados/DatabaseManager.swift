@@ -1,8 +1,6 @@
 import Foundation
 import SQLite
 
-// Abre o banco SQLite (no App Group, pra o widget também ler), cria as tabelas
-// e faz as migrações quando uma versão nova do app adiciona colunas
 class DatabaseManager {
     static let shared = DatabaseManager()
     var db: Connection?
@@ -11,7 +9,6 @@ class DatabaseManager {
         do {
             let path = Self.caminhoDoBanco()
             db = try Connection(path)
-            // App e widget usam o mesmo arquivo; espera em vez de falhar se o outro estiver escrevendo
             db?.busyTimeout = 5
             print("Banco em: \(path)")
             Self.prepararEsquema(db)
@@ -20,10 +17,6 @@ class DatabaseManager {
         }
     }
 
-    // O banco fica no App Group pra o widget também acessar.
-    // Versões anteriores guardavam em Documentos: se o arquivo antigo existir, ele é movido pro grupo.
-    // Ele substitui um banco do grupo que já exista, porque esse só pode ter sido criado vazio pelo widget
-    // (o widget não enxerga Documentos do app e não cria rotinas). Depois de movido, não roda mais.
     private static func caminhoDoBanco() -> String {
         let arquivo = "kaizen.sqlite3"
         let documentos = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -35,7 +28,6 @@ class DatabaseManager {
         let novo = grupo.appendingPathComponent(arquivo)
         let fm = FileManager.default
         if fm.fileExists(atPath: antigo.path) {
-            // Arquivos do banco do grupo (vazio, criado pelo widget) saem antes
             for sufixo in ["", "-wal", "-shm"] {
                 try? fm.removeItem(at: URL(fileURLWithPath: novo.path + sufixo))
             }
@@ -43,9 +35,8 @@ class DatabaseManager {
                 try fm.moveItem(at: antigo, to: novo)
             } catch {
                 print("Erro ao mover o banco pro App Group: \(error)")
-                return antigo.path   // continua usando o antigo; tenta de novo na próxima abertura
+                return antigo.path
             }
-            // Arquivos auxiliares do SQLite vão junto quando existem
             for sufixo in ["-wal", "-shm"] {
                 try? fm.moveItem(at: URL(fileURLWithPath: antigo.path + sufixo),
                                  to: URL(fileURLWithPath: novo.path + sufixo))
@@ -54,7 +45,6 @@ class DatabaseManager {
         return novo.path
     }
 
-    // Banco temporário em memória, com o mesmo esquema — usado nos testes
     static func bancoEmMemoria() -> Connection? {
         let db = try? Connection(.inMemory)
         prepararEsquema(db)
@@ -124,7 +114,6 @@ class DatabaseManager {
             t.column(Expression<String>("saude"), defaultValue: "")
         })
 
-        // Valores anotados nas tarefas de valor: um por tarefa e período (dia, domingo da semana ou dia 1)
         let registros = Table("registros_tarefa")
         let tarefaId = Expression<Int64>("tarefaId")
         try? db?.run(registros.create(ifNotExists: true) { t in
@@ -159,8 +148,6 @@ class DatabaseManager {
             t.column(fim, defaultValue: "")
         })
 
-        // Conclusões por tarefa e período (o histórico só guarda o total do período).
-        // Na primeira vez, aproveita a última conclusão de cada tarefa (dataConclusao) como ponto de partida.
         let conclusoes = Table("conclusoes")
         let tarefaIdConclusao = Expression<Int64>("tarefaId")
         let periodoConclusao = Expression<String>("periodo")
@@ -173,7 +160,6 @@ class DatabaseManager {
             preencherConclusoes(db)
         }
 
-        // Períodos pulados ("Pular hoje"): um por rotina e período
         let pulos = Table("pulos")
         try? db?.run(pulos.create(ifNotExists: true) { t in
             t.column(id, primaryKey: .autoincrement)
@@ -182,11 +168,9 @@ class DatabaseManager {
         })
         try? db?.run(pulos.createIndex(rotinaId, Expression<String>("periodo"), unique: true, ifNotExists: true))
 
-        // Garante que só existe um registro por rotina/dia — evita duplicar linhas
         try? db?.run(historico.createIndex(rotinaId, data, unique: true, ifNotExists: true))
     }
 
-    // Ponto de partida das conclusões por período: a última conclusão gravada em cada tarefa
     private static func preencherConclusoes(_ db: Connection?) {
         guard let linhas = try? db?.prepare("""
             SELECT tarefas.id, tarefas.dataConclusao, rotinas.frequencia FROM tarefas
@@ -206,16 +190,11 @@ class DatabaseManager {
         try? db?.execute("ALTER TABLE rotinas ADD COLUMN categoriaId INTEGER")
         try? db?.execute("ALTER TABLE rotinas ADD COLUMN diaLembrete INTEGER DEFAULT 1")
         try? db?.execute("ALTER TABLE rotinas ADD COLUMN icone TEXT DEFAULT ''")
-        // Dia em que a tarefa foi concluída ("yyyy-MM-dd"); vazio se não concluída
         try? db?.execute("ALTER TABLE tarefas ADD COLUMN dataConclusao TEXT DEFAULT ''")
         try? db?.execute("ALTER TABLE tarefas ADD COLUMN nota TEXT DEFAULT ''")
-        // Dias da semana ("2,4,6"); vazio = todos
         try? db?.execute("ALTER TABLE rotinas ADD COLUMN diasSemana TEXT DEFAULT ''")
         try? db?.execute("ALTER TABLE tarefas ADD COLUMN diasSemana TEXT DEFAULT ''")
 
-        // Horário por tarefa ("HH:mm"). Na primeira vez (quando a coluna é criada), o horário do
-        // lembrete de cada rotina passa pras tarefas dela que não têm horário, e o lembrete da rotina
-        // é desligado — os lembretes agora são por tarefa.
         if (try? db?.execute("ALTER TABLE tarefas ADD COLUMN horario TEXT DEFAULT ''")) != nil {
             try? db?.execute("""
                 UPDATE tarefas SET horario = (SELECT horarioLembrete FROM rotinas WHERE rotinas.id = tarefas.rotinaId)
@@ -225,14 +204,11 @@ class DatabaseManager {
             try? db?.execute("UPDATE rotinas SET lembreteAtivo = 0, horarioLembrete = ''")
         }
 
-        // Tarefas de valor
         try? db?.execute("ALTER TABLE tarefas ADD COLUMN tipo TEXT DEFAULT 'check'")
         try? db?.execute("ALTER TABLE tarefas ADD COLUMN unidade TEXT DEFAULT ''")
         try? db?.execute("ALTER TABLE tarefas ADD COLUMN meta REAL")
-        // Métrica do app Saúde ligada à tarefa de valor
         try? db?.execute("ALTER TABLE tarefas ADD COLUMN saude TEXT DEFAULT ''")
 
-        // Limpa tarefas e histórico de rotinas que já foram excluídas
         try? db?.execute("DELETE FROM tarefas WHERE rotinaId NOT IN (SELECT id FROM rotinas)")
         try? db?.execute("DELETE FROM historico_rotina WHERE rotinaId NOT IN (SELECT id FROM rotinas)")
         try? db?.execute("DELETE FROM pausas WHERE rotinaId NOT IN (SELECT id FROM rotinas)")

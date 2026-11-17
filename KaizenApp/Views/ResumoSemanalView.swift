@@ -1,6 +1,5 @@
 import SwiftUI
 
-// "Sua semana": como foi a semana que terminou (domingo a sábado)
 struct ResumoSemanalView: View {
     @StateObject private var viewModel = ResumoSemanalViewModel()
     private let colunas = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
@@ -26,7 +25,6 @@ struct ResumoSemanalView: View {
 
     private func conteudo(_ resumo: ResumoSemanal) -> some View {
         VStack(alignment: .leading, spacing: 20) {
-            // A taxa da semana em número grande, com uma barra fina
             VStack(alignment: .leading, spacing: 12) {
                 Text(intervalo(resumo))
                     .font(.subheadline)
@@ -55,7 +53,6 @@ struct ResumoSemanalView: View {
                        valor: nomeDoDia(melhor), unidade: "")
             }
 
-            // Cada rotina: os 7 dias (diárias) ou a semana (semanais)
             VStack(alignment: .leading, spacing: 0) {
                 Text("Rotinas").font(.headline).padding(.bottom, 8)
                 ForEach(resumo.linhas) { linha in
@@ -71,7 +68,6 @@ struct ResumoSemanalView: View {
                                             .fill(feito ? Paleta.destaque : Paleta.trilha)
                                             .frame(width: 12, height: 12)
                                     } else {
-                                        // Folga: só o contorno
                                         Circle()
                                             .strokeBorder(Color(.tertiaryLabel), lineWidth: 1)
                                             .frame(width: 12, height: 12)
@@ -128,7 +124,6 @@ struct ResumoSemanalView: View {
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: Estilo.cantoCartao))
     }
 
-    // "12 a 18 de outubro"
     private func intervalo(_ resumo: ResumoSemanal) -> String {
         guard let inicio = DataUtil.data(de: resumo.inicio), let fim = DataUtil.data(de: resumo.fim) else { return "" }
         let dia = DateFormatter()

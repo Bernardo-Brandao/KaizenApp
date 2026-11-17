@@ -1,13 +1,9 @@
 import UIKit
 import UserNotifications
 
-// Trata os toques nas notificações de lembrete:
-// - "Marcar tudo como feito" e "Adiar 1 hora" rodam sem abrir o app
-// - tocar na notificação abre a tela da rotina (pelo mesmo link kaizen:// do widget)
 final class NotificacaoDelegate: NSObject, UNUserNotificationCenterDelegate {
     static let shared = NotificacaoDelegate()
 
-    // Precisa ser chamado antes do app terminar de abrir, pra receber o toque que abriu o app
     func registrar() {
         UNUserNotificationCenter.current().delegate = self
         NotificationManager.shared.registrarCategorias()
@@ -15,7 +11,6 @@ final class NotificacaoDelegate: NSObject, UNUserNotificationCenterDelegate {
 
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
                                             didReceive response: UNNotificationResponse) async {
-        // Resumo semanal abre "Sua semana"; o lembrete do fim do dia abre a tela Hoje
         if let tipo = response.notification.request.content.userInfo["tipo"] as? String {
             let destino = tipo == "semana" ? "kaizen://semana" : "kaizen://hoje"
             await MainActor.run {
@@ -33,7 +28,6 @@ final class NotificacaoDelegate: NSObject, UNUserNotificationCenterDelegate {
         await MainActor.run {
             switch acao {
             case NotificationManager.acaoConcluirTudo:
-                // Lembrete de um horário: só as tarefas dele. (Lembretes antigos, sem tarefas: a rotina toda)
                 if let tarefaIds, !tarefaIds.isEmpty {
                     ConclusaoTarefa.concluir(tarefaIds: tarefaIds, rotinaId: rotinaId)
                 } else {
@@ -54,7 +48,6 @@ final class NotificacaoDelegate: NSObject, UNUserNotificationCenterDelegate {
         }
     }
 
-    // Com o app aberto, o lembrete aparece como banner (o padrão do iOS é não mostrar)
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
                                             willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
         [.banner, .sound]

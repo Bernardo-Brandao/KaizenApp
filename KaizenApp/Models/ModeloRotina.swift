@@ -1,6 +1,5 @@
 import Foundation
 
-// Rotinas prontas pra começar rápido: emoji, frequência e tarefas já preenchidos
 struct ModeloRotina: Identifiable {
     let nome: String
     let icone: String

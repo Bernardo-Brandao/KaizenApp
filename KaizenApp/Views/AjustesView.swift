@@ -2,10 +2,9 @@ import SwiftUI
 import UniformTypeIdentifiers
 import UserNotifications
 
-// Aba Ajustes: backup, notificações, bloqueio com Face ID e categorias
 struct AjustesView: View {
     @State private var mostrarImportador = false
-    @State private var backupPendente: Backup?        // lido do arquivo, esperando confirmação
+    @State private var backupPendente: Backup?
     @State private var mensagem: Mensagem?
     @AppStorage("resumoSemanalAtivo") private var resumoSemanalAtivo = true
     @AppStorage(NotificationManager.chaveFimDoDia) private var fimDoDia = NotificationManager.horarioFimDoDiaPadrao
@@ -89,7 +88,6 @@ struct AjustesView: View {
         }
     }
 
-    // Ligar ou desligar o bloqueio pede o Face ID antes, pra confirmar que funciona
     private func alternarBloqueio(_ ligar: Bool) {
         guard Bloqueio.disponivel else {
             mensagem = Mensagem(titulo: "Bloqueio indisponível",
@@ -106,7 +104,6 @@ struct AjustesView: View {
     private func abrirArquivo(_ resultado: Result<URL, Error>) {
         do {
             let url = try resultado.get()
-            // Arquivos de fora do app (Arquivos, iCloud) precisam de acesso liberado
             let acessou = url.startAccessingSecurityScopedResource()
             defer { if acessou { url.stopAccessingSecurityScopedResource() } }
             backupPendente = try BackupService.ler(Data(contentsOf: url))
@@ -119,7 +116,6 @@ struct AjustesView: View {
     private func restaurar(_ backup: Backup) {
         do {
             try BackupService.restaurar(backup)
-            // Lembretes e widget passam a refletir os dados importados
             UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
             NotificationManager.shared.reagendarTodos()
             WidgetSync.atualizar()
@@ -136,7 +132,6 @@ private struct Mensagem: Identifiable {
     let texto: String
 }
 
-// Arquivo gerado na hora em que o usuário escolhe compartilhar
 struct ArquivoBackup: Transferable {
     static var transferRepresentation: some TransferRepresentation {
         FileRepresentation(exportedContentType: .json) { _ in

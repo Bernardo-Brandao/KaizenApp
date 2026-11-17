@@ -1,7 +1,6 @@
 import Foundation
 import SQLite
 
-// Acesso à tabela de categorias (ex.: Saúde, Trabalho) no banco SQLite
 class CategoriaDAO {
     let db = DatabaseManager.shared.db
     let table = Table("categorias")
@@ -33,7 +32,6 @@ class CategoriaDAO {
         let registro = table.filter(id == categoriaId)
         try? db?.run(registro.delete())
 
-        // Rotinas dessa categoria ficam "sem categoria" em vez de apontar pra um id que não existe
         let rotinas = Table("rotinas")
         let rotinaCategoriaId = Expression<Int64?>("categoriaId")
         try? db?.run(rotinas.filter(rotinaCategoriaId == categoriaId).update(rotinaCategoriaId <- nil))

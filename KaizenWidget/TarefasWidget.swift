@@ -2,11 +2,9 @@ import AppIntents
 import SwiftUI
 import WidgetKit
 
-// MARK: - Intent: tocar numa tarefa do widget marca/desmarca sem abrir o app
-
 struct AlternarTarefaIntent: AppIntent {
     static let title: LocalizedStringResource = "Marcar tarefa"
-    static let isDiscoverable = false   // só pelo widget, não aparece no app Atalhos
+    static let isDiscoverable = false
 
     @Parameter(title: "Tarefa") var tarefaId: Int
     @Parameter(title: "Rotina") var rotinaId: Int
@@ -20,17 +18,14 @@ struct AlternarTarefaIntent: AppIntent {
 
     func perform() async throws -> some IntentResult {
         ConclusaoTarefa.alternar(tarefaId: Int64(tarefaId), rotinaId: Int64(rotinaId))
-        return .result()   // o WidgetKit redesenha o widget depois do perform
+        return .result()
     }
 }
-
-// MARK: - Widget "Tarefas": as tarefas da próxima rotina pendente, com toque pra marcar
 
 struct TarefasWidgetView: View {
     let entrada: EntradaKaizen
     @Environment(\.widgetFamily) private var familia
 
-    // Próxima rotina pendente; se todas estiverem completas, a primeira (pra poder desmarcar)
     private var rotina: ResumoRotina? {
         let comTarefas = entrada.rotinas.filter { $0.total > 0 && $0.programadaHoje }
         return comTarefas.first { !$0.completa(em: entrada.date) } ?? comTarefas.first
@@ -60,8 +55,7 @@ struct TarefasWidgetView: View {
     private func conteudo(_ rotina: ResumoRotina) -> some View {
         let concluidas = rotina.concluidas(em: entrada.date)
         let cor = rotina.corHex.map(CoresWidget.hex) ?? Paleta.destaque
-        // Se o período virou desde a última leitura, mostra tudo desmarcado
-        let periodoVirou = !(entrada.date < rotina.validoAte)   // sem ">=" em Date (ver ResumoRotina)
+        let periodoVirou = !(entrada.date < rotina.validoAte)
 
         return VStack(alignment: .leading, spacing: 8) {
             Link(destination: LinkKaizen.rotina(rotina.id)) {
@@ -86,7 +80,6 @@ struct TarefasWidgetView: View {
             ForEach(rotina.tarefas.prefix(limite)) { tarefa in
                 let feita = tarefa.concluida && !periodoVirou
                 if let valorTexto = tarefa.valorTexto {
-                    // Tarefa de valor: widget não aceita digitar — tocar abre a rotina no app
                     Link(destination: LinkKaizen.rotina(rotina.id)) {
                         linhaTarefa(tarefa, feita: feita, cor: cor, icone: feita ? "checkmark.circle.fill" : "number.circle",
                                     detalhe: periodoVirou ? nil : valorTexto)

@@ -1,17 +1,15 @@
 import Foundation
 import Combine
 
-// Tarefas de uma rotina na tela da rotina: marcar, anotar valor, criar, editar e reordenar
 class TarefaViewModel: ObservableObject {
-    @Published var tarefas: [Tarefa] = []          // as de hoje (em rotinas diárias, algumas valem só em certos dias)
-    @Published var todasTarefas: [Tarefa] = []     // todas, pra organizar e pra seção "Em outros dias"
+    @Published var tarefas: [Tarefa] = []
+    @Published var todasTarefas: [Tarefa] = []
     private let dao = TarefaDAO()
     private let historicoDao = HistoricoDAO()
     private let rotinaId: Int64
-    var frequencia: String   // define o período do reset: dia, semana ou mês
-    var programadaHoje = true // rotina diária com dias escolhidos: false nos dias de folga
+    var frequencia: String
+    var programadaHoje = true
 
-    // Tarefas que não aparecem hoje (só em outros dias da semana)
     var tarefasDeOutrosDias: [Tarefa] {
         let deHoje = Set(tarefas.compactMap(\.id))
         return todasTarefas.filter { !deHoje.contains($0.id ?? -1) }
@@ -41,7 +39,6 @@ class TarefaViewModel: ObservableObject {
         atualizarLembrete()
     }
 
-    // Retorna true quando esse toque completou a rotina no período (pra comemorar)
     @discardableResult
     func alternarConcluida(_ tarefa: Tarefa) -> Bool {
         let estavaCompleta = rotinaCompleta
@@ -53,7 +50,6 @@ class TarefaViewModel: ObservableObject {
         return !estavaCompleta && rotinaCompleta
     }
 
-    // Anota o valor de uma tarefa de valor; retorna true se isso completou a rotina (pra comemorar)
     @discardableResult
     func registrarValor(_ tarefa: Tarefa, valor: Double) -> Bool {
         let estavaCompleta = rotinaCompleta
@@ -76,7 +72,7 @@ class TarefaViewModel: ObservableObject {
                    tipo: tipo, unidade: unidade.trimmingCharacters(in: .whitespaces),
                    meta: tipo == "check" ? nil : meta, saude: saude)
         carregar()
-        atualizarLembrete()   // dias e horário mudam os lembretes da tarefa
+        atualizarLembrete()
     }
 
     func mover(de origem: IndexSet, para destino: Int) {
@@ -84,7 +80,6 @@ class TarefaViewModel: ObservableObject {
         carregar()
     }
 
-    // Mesmo comportamento do .onMove da List: `destino` é a posição antes da remoção
     static func reordenar<T>(_ itens: [T], de origem: IndexSet, para destino: Int) -> [T] {
         let movidos = origem.map { itens[$0] }
         var reordenados = itens
@@ -102,14 +97,11 @@ class TarefaViewModel: ObservableObject {
         atualizarLembrete()
     }
 
-    // Completar (ou deixar de completar) a rotina muda se o lembrete do período ainda precisa tocar
     private func atualizarLembrete() {
         NotificationManager.shared.atualizarLembrete(rotinaId: rotinaId)
         WidgetSync.atualizar()
     }
 
-    // Sempre que a lista de tarefas muda, atualiza o histórico do período atual
-    // Em dia de folga da rotina não registra (o dia não conta pra sequência nem pra média)
     private func registrarProgressoAtual() {
         guard programadaHoje else { return }
         let total = tarefas.count

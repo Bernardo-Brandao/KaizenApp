@@ -1,7 +1,5 @@
 import SwiftUI
 
-// Aba Hoje: tudo o que tem pra fazer hoje, de todas as rotinas, numa lista só.
-// Agrupada por parte do dia (pelo horário do lembrete da tarefa); semana e mês vêm depois.
 struct HojeView: View {
     @StateObject private var viewModel = HojeViewModel()
     @Binding var abaSelecionada: KaizenAppApp.Aba
@@ -71,8 +69,6 @@ struct HojeView: View {
         }
     }
 
-    // MARK: - Seções
-
     private var cabecalho: some View {
         VStack(alignment: .leading, spacing: 10) {
             VStack(alignment: .leading, spacing: 2) {
@@ -122,7 +118,6 @@ struct HojeView: View {
         }
     }
 
-    // Rotinas puladas: uma linha discreta pra cada, com "Desfazer"
     private var puladas: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Puladas")
@@ -161,9 +156,6 @@ struct HojeView: View {
         .padding(.vertical, 48)
     }
 
-    // MARK: - Ações
-
-    // Traz do app Saúde os valores das tarefas ligadas a ele
     private func sincronizarSaude() async {
         let todas = viewModel.doDia + viewModel.daSemana + viewModel.doMes
         guard todas.contains(where: { !$0.tarefa.saude.isEmpty }) else { return }
@@ -172,7 +164,6 @@ struct HojeView: View {
     }
 
     private func tocar(_ item: ItemHoje) {
-        // Contagem: cada toque soma 1 (já feita, abre pra corrigir)
         if item.tarefa.ehContagem && !item.tarefa.concluidaHoje {
             toques += 1
             if viewModel.registrarValor(item, valor: item.tarefa.valorAtual + 1) { comemorar(item.rotina) }
@@ -205,7 +196,6 @@ struct HojeView: View {
     }
 }
 
-// Partes do dia pelo horário do lembrete; sem horário fica em "A qualquer hora"
 enum ParteDoDia: CaseIterable {
     case manha, tarde, noite, qualquerHora
 
@@ -224,7 +214,6 @@ enum ParteDoDia: CaseIterable {
     }
 }
 
-// Linha da tela Hoje: a tarefa, de qual rotina ela é e o horário
 struct LinhaHoje: View {
     let item: ItemHoje
     let cor: Color
@@ -271,7 +260,6 @@ struct LinhaHoje: View {
         .accessibilityAddTraits(tarefa.concluidaHoje ? .isSelected : [])
     }
 
-    // "🏋️ Treino · 1,5 / 3 L · 30 min"
     private var detalhe: String {
         var partes = ["\(item.rotina.iconeExibido) \(item.rotina.nome)"]
         if tarefa.ehValor { partes.append(tarefa.valorDescrito) }

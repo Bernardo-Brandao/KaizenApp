@@ -1,7 +1,6 @@
 import SwiftUI
 import Combine
 
-// Barra inferior própria: plana, com uma linha fina em cima, ícones finos e um pontinho coral na aba atual
 struct BarraInferior: View {
     @Binding var aba: KaizenAppApp.Aba
 
@@ -51,7 +50,6 @@ struct BarraInferior: View {
     }
 }
 
-// Esconde a barra do sistema e põe a nossa embaixo (some enquanto o teclado está aberto)
 struct ComBarraInferior: ViewModifier {
     @Binding var aba: KaizenAppApp.Aba
     @State private var tecladoAberto = false

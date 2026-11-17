@@ -1,11 +1,9 @@
 import SwiftUI
 
-// Aba inicial: o progresso de hoje com um gráfico dos últimos 7 dias,
-// as rotinas do período e os cartões de sequência e prêmios
 struct ResumoView: View {
     @StateObject private var viewModel = ResumoViewModel()
     @Binding var abaSelecionada: KaizenAppApp.Aba
-    @Binding var mostrarSemana: Bool                 // também aberto pela notificação de domingo
+    @Binding var mostrarSemana: Bool
     @Environment(\.scenePhase) private var scenePhase
     @State private var mostrarModelos = false
     @StateObject private var rotinaViewModel = RotinaViewModel()
@@ -45,8 +43,6 @@ struct ResumoView: View {
         }
     }
 
-    // MARK: - Seções
-
     private var cabecalho: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(dataDeHoje)
@@ -58,7 +54,6 @@ struct ResumoView: View {
         .padding(.top, 8)
     }
 
-    // Quanto já foi feito hoje e, embaixo, como foram os últimos 7 dias
     private var painelHoje: some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack(alignment: .firstTextBaseline) {
@@ -89,7 +84,6 @@ struct ResumoView: View {
 
             GraficoDias(dias: viewModel.semana, cor: Paleta.destaque)
 
-            // Rotinas semanais e mensais numa linha discreta, só se existirem
             if !outrosPeriodos.isEmpty {
                 Text(outrosPeriodos)
                     .font(.footnote)
@@ -116,7 +110,6 @@ struct ResumoView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Comece com uma rotina pronta e ajuste do seu jeito.")
                         .foregroundStyle(.secondary)
-                    // Três modelos de atalho, e o resto na galeria
                     HStack(spacing: 10) {
                         ForEach(ModeloRotina.todos.prefix(3)) { modelo in
                             NavigationLink {
@@ -189,7 +182,6 @@ struct ResumoView: View {
         .contentShape(Rectangle())
     }
 
-    // Sequência e prêmios lado a lado num cartão só, sem cor
     private var cartoes: some View {
         HStack(spacing: 0) {
             numero(titulo: "Sequência", icone: "flame",
@@ -248,14 +240,12 @@ struct ResumoView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    // "Quinta-feira, 22 de outubro" — só a primeira letra maiúscula
     private var dataDeHoje: String {
         let texto = Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "pt_BR")))
         return texto.prefix(1).uppercased() + texto.dropFirst()
     }
 }
 
-// Colunas dos últimos 7 dias: a altura é a parte das tarefas diárias feitas no dia, hoje em destaque
 struct GraficoDias: View {
     let dias: [DiaSemana]
     var cor: Color

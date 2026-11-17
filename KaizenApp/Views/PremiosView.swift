@@ -1,7 +1,5 @@
 import SwiftUI
 
-// Prêmios (aberto pelo Resumo): medalhas em destaque quando conquistadas,
-// cinza enquanto ainda não
 struct PremiosView: View {
     @StateObject private var viewModel = ResumoViewModel()
 

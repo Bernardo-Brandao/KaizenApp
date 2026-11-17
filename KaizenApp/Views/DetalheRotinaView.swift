@@ -1,9 +1,7 @@
 import SwiftUI
 
-// Página da rotina, no estilo do Notion: capa na cor da rotina, emoji, título,
-// propriedades em linhas e as tarefas como uma checklist
 struct DetalheRotinaView: View {
-    @State private var rotina: Rotina      // recarregada do banco ao aparecer, pra refletir edições
+    @State private var rotina: Rotina
     @State private var categoria: Categoria?
     @State private var sequencia = 0
     @State private var recorde = 0
@@ -19,15 +17,15 @@ struct DetalheRotinaView: View {
     @State private var mostrarCampoNovaTarefa = false
     @FocusState private var focoNovaTarefa: Bool
     @State private var tarefaParaEditar: Tarefa?
-    @State private var tarefaParaAnotar: Tarefa?   // tarefa de valor: abre a tela de anotar
+    @State private var tarefaParaAnotar: Tarefa?
     @State private var mostrarOrganizar = false
     @State private var mostrarEdicao = false
     @State private var mostrarEstatisticas = false
     @State private var mostrarComemoracao = false
     @State private var mostrarDiasAnteriores = false
-    @State private var pulada = false           // pulou o período atual ("Pular hoje")
-    @State private var toquesEmTarefas = 0      // gatilho da vibração leve a cada toque
-    @State private var conclusoes = 0           // gatilho da vibração de sucesso
+    @State private var pulada = false
+    @State private var toquesEmTarefas = 0
+    @State private var conclusoes = 0
     @Environment(\.scenePhase) private var scenePhase
 
     init(rotina: Rotina) {
@@ -148,7 +146,6 @@ struct DetalheRotinaView: View {
             viewModel.carregar()
         }
         .task { await sincronizarSaude() }
-        // Recarrega ao voltar pro app — se virou o dia, as tarefas aparecem desmarcadas
         .onChange(of: scenePhase) { _, fase in
             if fase == .active {
                 viewModel.carregar()
@@ -156,8 +153,6 @@ struct DetalheRotinaView: View {
             }
         }
     }
-
-    // MARK: - Cabeçalho
 
     private var capa: some View {
         Rectangle()
@@ -184,7 +179,6 @@ struct DetalheRotinaView: View {
         .padding(.top, 36)
     }
 
-    // Propriedades em linhas, como numa página do Notion
     private var propriedades: some View {
         VStack(alignment: .leading, spacing: 10) {
             propriedade("Frequência", icone: "repeat") {
@@ -218,7 +212,6 @@ struct DetalheRotinaView: View {
 
     private func propriedade<Valor: View>(_ nome: String, icone: String, @ViewBuilder valor: () -> Valor) -> some View {
         HStack(alignment: .center, spacing: 0) {
-            // Ícone com largura fixa pra os nomes ficarem alinhados, como numa tabela
             HStack(spacing: 8) {
                 Image(systemName: icone).frame(width: 20)
                 Text(nome)
@@ -234,7 +227,6 @@ struct DetalheRotinaView: View {
         Set(viewModel.todasTarefas.map(\.horario).filter { !$0.isEmpty }).sorted()
     }
 
-    // "07:00, 12:30 e 19:00" (+ o dia, em semanais e mensais) ou "Nenhum"
     private var textoLembrete: String {
         let horarios = horariosDasTarefas
         guard !horarios.isEmpty else { return "Nenhum — defina na tarefa" }
@@ -249,13 +241,10 @@ struct DetalheRotinaView: View {
         }
     }
 
-    // MARK: - Checklist
-
     private var checklist: some View {
         VStack(alignment: .leading, spacing: 2) {
             ForEach(viewModel.tarefas) { tarefa in
                 LinhaTarefa(tarefa: tarefa, cor: cor, mostrarDias: rotina.frequencia == "Diária") {
-                    // Contagem: cada toque soma 1 (já feita, abre pra corrigir)
                     if tarefa.ehContagem && !tarefa.concluidaHoje {
                         toquesEmTarefas += 1
                         if viewModel.registrarValor(tarefa, valor: tarefa.valorAtual + 1) { comemorar() }
@@ -274,7 +263,6 @@ struct DetalheRotinaView: View {
             }
             novaTarefa
             outrosDias
-            // Atalho visível pra corrigir dias que passaram (também no menu "…")
             Button { mostrarDiasAnteriores = true } label: {
                 Label("Dias anteriores", systemImage: "calendar")
                     .font(.subheadline)
@@ -306,7 +294,6 @@ struct DetalheRotinaView: View {
         }
     }
 
-    // Tarefas que valem só em outros dias da semana (não aparecem na checklist de hoje)
     @ViewBuilder
     private var outrosDias: some View {
         let outras = viewModel.tarefasDeOutrosDias
@@ -339,7 +326,6 @@ struct DetalheRotinaView: View {
         }
     }
 
-    // "+ Nova tarefa" no fim da lista, que vira os campos de nome e nota
     @ViewBuilder
     private var novaTarefa: some View {
         if mostrarCampoNovaTarefa {
@@ -422,15 +408,10 @@ struct DetalheRotinaView: View {
         novaTarefaMeta = ""
         novaTarefaSaude = ""
         if ligadaAoSaude { Task { await sincronizarSaude() } }
-        // Os dias ficam: ajuda a adicionar várias tarefas da sexta em sequência
-        // Continua no campo, pra adicionar várias seguidas como numa lista do Notion
         focoNovaTarefa = true
         recarregarSequencia()
     }
 
-    // MARK: - Ações
-
-    // Traz do app Saúde os valores das tarefas ligadas a ele
     private func sincronizarSaude() async {
         guard viewModel.todasTarefas.contains(where: { !$0.saude.isEmpty }) else { return }
         await SaudeService.sincronizar()
@@ -438,7 +419,6 @@ struct DetalheRotinaView: View {
         recarregarSequencia()
     }
 
-    // Mostra o selo de rotina completa por ~2s, com vibração de sucesso
     private func comemorar() {
         conclusoes += 1
         recarregarSequencia()
@@ -457,7 +437,6 @@ struct DetalheRotinaView: View {
         }
     }
 
-    // Pular o período atual: fica neutro na sequência e os lembretes dele não tocam
     private func alternarPulo() {
         guard let id = rotina.id else { return }
         let periodo = DataUtil.periodoAtual(frequencia: rotina.frequencia)
@@ -472,7 +451,6 @@ struct DetalheRotinaView: View {
         WidgetSync.atualizar()
     }
 
-    // Aviso de período pulado, com botão pra desfazer
     private var avisoPulada: some View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: "forward.fill")
@@ -499,7 +477,6 @@ struct DetalheRotinaView: View {
         recarregarRotina()
     }
 
-    // Aviso de dia de folga de uma rotina com dias escolhidos
     private var avisoFolga: some View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: "moon.zzz.fill")
@@ -518,7 +495,6 @@ struct DetalheRotinaView: View {
         .background(RoundedRectangle(cornerRadius: 14).fill(Color.indigo.opacity(0.12)))
     }
 
-    // Aviso de rotina pausada, com botão pra retomar
     private var avisoPausada: some View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: "pause.circle.fill")
@@ -541,7 +517,6 @@ struct DetalheRotinaView: View {
         .background(RoundedRectangle(cornerRadius: 14).fill(Color.orange.opacity(0.12)))
     }
 
-    // Busca a versão salva da rotina (pode ter sido editada), a categoria e a sequência
     private func recarregarRotina() {
         if let id = rotina.id, let salva = RotinaDAO().buscar(id: id) {
             rotina = salva
@@ -562,8 +537,6 @@ struct DetalheRotinaView: View {
     }
 }
 
-// MARK: - Linha da checklist
-
 struct LinhaTarefa: View {
     let tarefa: Tarefa
     let cor: Color
@@ -574,7 +547,6 @@ struct LinhaTarefa: View {
         Button(action: aoTocar) {
             HStack(alignment: .firstTextBaseline, spacing: 12) {
                 if tarefa.ehValor {
-                    // Tarefa de valor: círculo com o progresso em vez da checkbox
                     CirculoProgresso(progresso: tarefa.progressoValor, cor: cor)
                         .frame(width: 22, height: 22)
                         .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + 6 }
@@ -608,7 +580,6 @@ struct LinhaTarefa: View {
                 if !tarefa.horario.isEmpty {
                     EtiquetaHorario(horario: tarefa.horario)
                 }
-                // Tarefa só de alguns dias: etiqueta com os dias
                 if mostrarDias && !tarefa.diasSemana.isEmpty {
                     Text(DiasSemana.descricao(tarefa.diasSemana))
                         .font(.caption2.weight(.medium))
@@ -626,7 +597,6 @@ struct LinhaTarefa: View {
     }
 }
 
-// MARK: - Organizar tarefas (arrastar pra reordenar, deslizar pra excluir)
 struct OrganizarTarefasView: View {
     @ObservedObject var viewModel: TarefaViewModel
     @Environment(\.dismiss) private var dismiss

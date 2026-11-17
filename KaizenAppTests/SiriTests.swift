@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import KaizenApp
 
-// Texto que a Siri fala no "How are my routines?"
 @MainActor
 struct SiriTests {
     private func rotina(_ id: Int64, _ nome: String, feitas: Int, total: Int) -> ResumoRotina {

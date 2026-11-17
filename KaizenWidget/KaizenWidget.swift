@@ -1,8 +1,6 @@
 import SwiftUI
 import WidgetKit
 
-// MARK: - Timeline
-
 struct EntradaKaizen: TimelineEntry {
     let date: Date
     let rotinas: [ResumoRotina]
@@ -18,9 +16,6 @@ struct ProvedorKaizen: TimelineProvider {
         completion(EntradaKaizen(date: .now, rotinas: context.isPreview && rotinas.isEmpty ? Self.exemplo : rotinas))
     }
 
-    // Uma entrada agora e outra na próxima virada de período (pra zerar na hora certa).
-    // Depois relê o banco: na virada (tarefas e folgas do dia novo) ou em 30 min, o que vier antes —
-    // assim o widget não fica preso num retrato antigo quando o app não avisa (ex.: dias sem abrir)
     func getTimeline(in context: Context, completion: @escaping (Timeline<EntradaKaizen>) -> Void) {
         let agora = Date.now
         let rotinas = ResumoWidget.carregar()
@@ -32,7 +27,6 @@ struct ProvedorKaizen: TimelineProvider {
 
     static let intervaloReleitura: TimeInterval = 30 * 60
 
-    // Dados de exemplo pra galeria de widgets, quando ainda não há rotinas
     static let exemplo = [
         exemplo(1, "Manhã", feitas: 3, de: ["Água", "Alongar", "Meditar"], cor: nil),
         exemplo(2, "Estudos", feitas: 1, de: ["Ler 20 páginas", "Revisar", "Exercícios", "Resumo"], cor: "AF52DE"),
@@ -47,13 +41,10 @@ struct ProvedorKaizen: TimelineProvider {
     }
 }
 
-// MARK: - Views
-
 struct KaizenWidgetView: View {
     let entrada: EntradaKaizen
     @Environment(\.widgetFamily) private var familia
 
-    // Só rotinas com tarefas entram na conta
     private var rotinas: [ResumoRotina] {
         entrada.rotinas.filter { $0.total > 0 && $0.programadaHoje }
     }
@@ -75,8 +66,6 @@ struct KaizenWidgetView: View {
         .widgetURL(urlDoToque)
     }
 
-    // Toque no widget: o retangular abre a rotina pendente; os outros abrem a lista.
-    // No médio, cada linha tem o próprio Link e abre a rotina dela.
     private var urlDoToque: URL {
         if familia == .accessoryRectangular,
            let pendente = rotinas.first(where: { !$0.completa(em: entrada.date) }) {
@@ -106,8 +95,6 @@ struct KaizenWidgetView: View {
         }
     }
 
-    // MARK: - Tela de bloqueio (o sistema aplica as cores; aqui é só forma e texto)
-
     private var bloqueioCircular: some View {
         Gauge(value: Double(completas), in: 0...Double(max(rotinas.count, 1))) {
             Image(systemName: "checklist")
@@ -122,7 +109,6 @@ struct KaizenWidgetView: View {
         .widgetAccentable()
     }
 
-    // Próxima rotina com tarefa pendente; se não houver, "Tudo feito!"
     private var bloqueioRetangular: some View {
         let pendente = rotinas.first { !$0.completa(em: entrada.date) }
         return VStack(alignment: .leading, spacing: 2) {
@@ -154,7 +140,6 @@ struct KaizenWidgetView: View {
     private var tarefasFeitas: Int { rotinas.reduce(0) { $0 + $1.concluidas(em: entrada.date) } }
     private var totalTarefas: Int { rotinas.reduce(0) { $0 + $1.total } }
 
-    // Tarefas feitas hoje em número grande, com uma barra fina
     private var painel: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Hoje")
@@ -168,7 +153,6 @@ struct KaizenWidgetView: View {
         }
     }
 
-    // Pequeno: o painel e quantas rotinas estão completas
     private var resumoGeral: some View {
         VStack(alignment: .leading, spacing: 0) {
             painel
@@ -180,7 +164,6 @@ struct KaizenWidgetView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    // Médio: o painel à esquerda e as rotinas (com emoji) à direita
     private var lista: some View {
         HStack(spacing: 20) {
             painel
@@ -219,13 +202,11 @@ struct KaizenWidgetView: View {
     }
 }
 
-// Links que o app trata em KaizenAppApp.onOpenURL
 enum LinkKaizen {
     static let lista = URL(string: "kaizen://rotinas")!
     static func rotina(_ id: Int64) -> URL { URL(string: "kaizen://rotina/\(id)")! }
 }
 
-// Cores de categoria (hex) no widget, que não enxerga o Color(hex:) do app
 enum CoresWidget {
     static func hex(_ valor: String) -> Color {
         var numero: UInt64 = 0
@@ -237,8 +218,6 @@ enum CoresWidget {
         )
     }
 }
-
-// MARK: - Widget
 
 @main
 struct KaizenWidgets: WidgetBundle {

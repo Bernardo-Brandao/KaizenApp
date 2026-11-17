@@ -1,8 +1,5 @@
 import AppIntents
 
-// Ações da Siri e do app Atalhos. Textos em inglês: é o idioma do projeto e da Siri do usuário.
-
-// "How are my routines?" — resumo do período atual de todas as rotinas ativas
 struct ResumoRotinasIntent: AppIntent {
     static let title: LocalizedStringResource = "Routines Summary"
     static let description = IntentDescription("Tells how many routines you completed and which one is next.")
@@ -32,7 +29,6 @@ struct ResumoRotinasIntent: AppIntent {
     }
 }
 
-// "Mark <routine> as done" — conclui todas as tarefas do período, igual ao botão da notificação
 struct ConcluirRotinaIntent: AppIntent {
     static let title: LocalizedStringResource = "Mark Routine as Done"
     static let description = IntentDescription("Completes all of the routine's tasks for the current period.")
@@ -48,7 +44,6 @@ struct ConcluirRotinaIntent: AppIntent {
     }
 }
 
-// "<routine> progress" — quantas tarefas da rotina já foram feitas no período
 struct ProgressoRotinaIntent: AppIntent {
     static let title: LocalizedStringResource = "Routine Progress"
     static let description = IntentDescription("Tells how many of the routine's tasks you did in the current period.")
@@ -73,7 +68,6 @@ struct ProgressoRotinaIntent: AppIntent {
     }
 }
 
-// Frases da Siri. Toda frase precisa ter o nome do app.
 struct KaizenShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(

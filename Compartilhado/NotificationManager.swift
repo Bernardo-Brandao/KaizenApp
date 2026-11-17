@@ -1,18 +1,13 @@
 import Foundation
 import UserNotifications
 
-// Agenda as notificações: o lembrete de cada tarefa, o resumo de domingo e o aviso do fim do dia
 class NotificationManager {
     static let shared = NotificationManager()
     private init() {}
 
-    // O iOS guarda no máximo 64 notificações pendentes por app. Os lembretes são avulsos
-    // (um por tarefa/horário/dia), então a janela à frente é curta e se renova a cada abertura.
-    private static let limiteNotificacoes = 52   // folga pro resumo semanal, o fim do dia e adiamentos
-    private static let ocorrenciasNaoDiarias = 2  // semanal e mensal: próximas 2 semanas/meses
+    private static let limiteNotificacoes = 52
+    private static let ocorrenciasNaoDiarias = 2
 
-    // Categoria do lembrete com os botões "Marcar como feito" e "Adiar 1 hora".
-    // As ações são tratadas no app (NotificacaoDelegate) e valem pras tarefas daquele horário.
     static let categoriaLembrete = "LEMBRETE_ROTINA"
     static let acaoConcluirTudo = "CONCLUIR_TUDO"
     static let acaoAdiar = "ADIAR_1H"
@@ -36,13 +31,9 @@ class NotificationManager {
         }
     }
 
-    // Agenda os lembretes das tarefas da rotina: uma notificação por horário e dia, juntando as
-    // tarefas daquele horário. No período atual, tarefas já feitas não entram — e se todas do horário
-    // estão feitas, o lembrete não toca (o "lembrete inteligente").
     func agendarLembrete(para rotina: Rotina) {
         guard let rotinaId = rotina.id else { return }
 
-        // Rotina pausada não recebe lembrete
         guard rotina.ativa else {
             cancelarLembrete(para: rotina)
             return
@@ -66,7 +57,6 @@ class NotificationManager {
                                          trigger: trigger)
         }
 
-        // Horários sem tarefa pendente hoje: o lembrete adiado deles também não precisa tocar
         let hoje = DataUtil.hoje()
         let horariosResolvidos = Set(tarefas.map(\.horario).filter { !$0.isEmpty }).filter { horario in
             !tarefas.contains { $0.horario == horario && $0.aparece(em: hoje) && !$0.concluidaHoje }
@@ -82,14 +72,12 @@ class NotificationManager {
         }
     }
 
-    // Reagenda a partir do id — usado quando as tarefas mudam (completar pode cancelar lembretes)
     func atualizarLembrete(rotinaId: Int64) {
         guard let rotina = RotinaDAO().buscar(id: rotinaId) else { return }
         agendarLembrete(para: rotina)
         agendarFimDoDia()
     }
 
-    // Reagenda os lembretes de todas as rotinas — renova a janela de lembretes avulsos
     func reagendarTodos() {
         for rotina in RotinaDAO().listarTodas() {
             agendarLembrete(para: rotina)
@@ -97,12 +85,7 @@ class NotificationManager {
         agendarFimDoDia()
     }
 
-    // MARK: - Fim do dia
-
-    // Um lembrete no fim do dia (21:00 por padrão), só se ainda faltar algo nas rotinas diárias.
-    // Hoje: com o que falta, e some quando tudo é feito (é reagendado a cada mudança).
-    // Próximos dias: genérico, só pra quem não abrir o app — abrir já recalcula o do dia.
-    static let chaveFimDoDia = "fimDoDiaHorario"     // "HH:mm"; vazio = desligado
+    static let chaveFimDoDia = "fimDoDiaHorario"
     static let horarioFimDoDiaPadrao = "21:00"
     private static let prefixoFimDoDia = "fim-do-dia-"
     private static let diasFimDoDia = 3
@@ -138,7 +121,6 @@ class NotificationManager {
         }
     }
 
-    // O que falta hoje nas rotinas diárias ativas (sem folgas nem dias pulados): (nome da rotina, quantas faltam)
     static func pendentesHoje() -> [(rotina: String, faltam: Int)] {
         let hoje = DataUtil.hoje()
         let tarefaDao = TarefaDAO()
@@ -151,7 +133,6 @@ class NotificationManager {
         }
     }
 
-    // "Faltam 3 tarefas hoje" / "Foco: 1 · Treino: 2" — nil quando não falta nada (não notifica)
     static func textoFimDoDia(_ pendentes: [(rotina: String, faltam: Int)]) -> (titulo: String, corpo: String)? {
         let total = pendentes.reduce(0) { $0 + $1.faltam }
         guard total > 0 else { return nil }
@@ -167,7 +148,7 @@ class NotificationManager {
         content.title = titulo
         content.body = corpo
         content.sound = .default
-        content.userInfo = ["tipo": "fimDoDia"]   // tocar abre a tela Hoje
+        content.userInfo = ["tipo": "fimDoDia"]
         return content
     }
 
@@ -179,7 +160,6 @@ class NotificationManager {
         }
     }
 
-    // "Adiar 1 hora": repete o lembrete daquele horário daqui a `segundos`, só com as tarefas ainda pendentes
     func adiarLembrete(rotinaId: Int64, horario: String, segundos: TimeInterval = 3600) {
         guard let rotina = RotinaDAO().buscar(id: rotinaId) else { return }
         let pendentes = TarefaDAO().listarPorRotina(rotinaId, frequencia: rotina.frequencia)
@@ -192,8 +172,6 @@ class NotificationManager {
         UNUserNotificationCenter.current().add(request)
     }
 
-    // Quantos dias à frente agendar os lembretes diários, pra caber no limite do iOS:
-    // divide o limite pelo número de horários diferentes das rotinas diárias ativas (entre 1 e 7 dias)
     private static func diasDeJanela() -> Int {
         let tarefaDao = TarefaDAO()
         var horariosDiarios = 0
@@ -212,7 +190,6 @@ class NotificationManager {
         return max(1, min(7, (limiteNotificacoes - naoDiarios) / horariosDiarios))
     }
 
-    // Todo domingo às 19h: "Sua semana no Kaizen". Tocar abre o resumo da semana (NotificacaoDelegate).
     static let idResumoSemanal = "resumo-semanal"
 
     func agendarResumoSemanal(ativo: Bool) {
@@ -227,34 +204,31 @@ class NotificationManager {
         content.userInfo = ["tipo": "semana"]
 
         var quando = DateComponents()
-        quando.weekday = 1   // domingo
+        quando.weekday = 1
         quando.hour = 19
         let trigger = UNCalendarNotificationTrigger(dateMatching: quando, repeats: true)
         centro.add(UNNotificationRequest(identifier: Self.idResumoSemanal, content: content, trigger: trigger))
     }
 
-    // "☀️ Manhã · 07:00" / "Água, Alongar" — com os ids das tarefas pros botões da notificação
     private static func conteudo(rotina: Rotina, horario: String, tarefas: [Tarefa]) -> UNMutableNotificationContent {
         let content = UNMutableNotificationContent()
         content.title = "\(rotina.iconeExibido) \(rotina.nome) · \(horario)"
         content.body = tarefas.map(\.nome).joined(separator: ", ")
         content.sound = .default
         content.categoryIdentifier = categoriaLembrete
-        content.threadIdentifier = "rotina-\(rotina.id ?? 0)"   // agrupa as notificações da rotina
+        content.threadIdentifier = "rotina-\(rotina.id ?? 0)"
         if let id = rotina.id {
             content.userInfo = ["rotinaId": id, "horario": horario, "tarefas": tarefas.compactMap(\.id)]
         }
         return content
     }
 
-    // Fora do prefixo "rotina-<id>-" de propósito: reagendar a série não apaga o adiamento
     private static func idAdiado(_ rotinaId: Int64, horario: String) -> String {
         "adiado-rotina-\(rotinaId)-\(horario)"
     }
 
     private func removerPendentes(rotinaId: Int64) async {
         await removerPendentes(prefixo: Self.prefixo(rotinaId))
-        // "rotina-<id>" e "adiado-rotina-<id>" sozinhos são de versões anteriores
         UNUserNotificationCenter.current().removePendingNotificationRequests(
             withIdentifiers: ["rotina-\(rotinaId)", "adiado-rotina-\(rotinaId)"])
     }
@@ -271,17 +245,12 @@ class NotificationManager {
         "rotina-\(rotinaId)-"
     }
 
-    // MARK: - Cálculo das datas (sem efeitos colaterais, testável)
-
-    // As próximas `quantidade` datas de lembrete a partir de `inicio`, no horário dado.
-    // Diária: todo dia. Semanal: no dia da semana `diaLembrete` (1 = domingo). Mensal: no dia do mês `diaLembrete`.
     static func proximasDatas(frequencia: String, diaLembrete: Int, hora: Int, minuto: Int,
                               aPartirDe inicio: Date, quantidade: Int,
                               diasSemana: Set<Int> = [],
                               calendario: Calendar = .current) -> [Date] {
         var datas: [Date] = []
         var dia = calendario.startOfDay(for: inicio)
-        // 400 dias cobre com folga 3 meses ou 4 semanas
         for _ in 0..<400 where datas.count < quantidade {
             let componentes = calendario.dateComponents([.weekday, .day], from: dia)
             let caiNoDia: Bool
@@ -305,12 +274,10 @@ class NotificationManager {
 
     struct LembretePlanejado {
         let data: Date
-        let horario: String     // "HH:mm"
-        let tarefas: [Tarefa]   // as tarefas desse horário que valem no dia (e ainda pendentes, se é hoje)
+        let horario: String
+        let tarefas: [Tarefa]
     }
 
-    // Os próximos lembretes da rotina, um por horário e dia. `tarefas` são todas as da rotina
-    // (com `concluidaHoje` do período atual). Períodos pulados ficam sem lembrete. Sem efeitos colaterais, testável.
     static func planejarLembretes(rotina: Rotina, tarefas: [Tarefa], aPartirDe inicio: Date,
                                   quantidadePorHorario: Int, periodosPulados: Set<String> = [],
                                   hoje: String = DataUtil.hoje(),

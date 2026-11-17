@@ -1,7 +1,6 @@
 import Foundation
 import Combine
 
-// Dados da aba Resumo: o progresso de hoje, os últimos 7 dias, a sequência e os prêmios
 class ResumoViewModel: ObservableObject {
     @Published var rotinas: [ResumoRotina] = []
     @Published var semana: [DiaSemana] = []
@@ -11,7 +10,6 @@ class ResumoViewModel: ObservableObject {
     func carregar() {
         rotinas = ResumoWidget.carregar()
 
-        // Estatísticas de cada rotina ativa (streak, recorde, períodos completos)
         var sequencias: [Int] = []
         var recordes: [Int] = []
         var totalCompletos = 0
@@ -29,7 +27,6 @@ class ResumoViewModel: ObservableObject {
         }
 
         melhorSequenciaAtual = sequencias.max() ?? 0
-        // Hoje usa o progresso ao vivo das rotinas diárias (o histórico pode estar um passo atrás)
         semana = Self.ultimosDias(historicoDiario: historicoDiario).map { dia in
             guard dia.ehHoje, let hoje = Self.progresso(rotinas, frequencia: "Diária"), hoje.total > 0 else { return dia }
             return DiaSemana(data: dia.data, progresso: Double(hoje.feitas) / Double(hoje.total),
@@ -40,19 +37,12 @@ class ResumoViewModel: ObservableObject {
 
     var premiosConquistados: Int { premios.filter(\.conquistado).count }
 
-    // MARK: - Progresso
-
-    // Fração de tarefas feitas nas rotinas de uma frequência (nil = nenhuma rotina dessa frequência)
     static func progresso(_ rotinas: [ResumoRotina], frequencia: String, agora: Date = .now) -> (feitas: Int, total: Int)? {
-        // Rotinas de folga hoje ficam de fora
         let daFrequencia = rotinas.filter { $0.frequencia == frequencia && $0.total > 0 && $0.programadaHoje }
         guard !daFrequencia.isEmpty else { return nil }
         return (daFrequencia.reduce(0) { $0 + $1.concluidas(em: agora) }, daFrequencia.reduce(0) { $0 + $1.total })
     }
 
-    // MARK: - Últimos dias
-
-    // Os últimos dias até hoje (hoje por último), com o progresso das rotinas diárias em cada dia
     static func ultimosDias(historicoDiario: [HistoricoDia], hoje: String = DataUtil.hoje(), quantidade: Int = 7) -> [DiaSemana] {
         let calendario = Calendar(identifier: .gregorian)
         guard let dataHoje = DataUtil.data(de: hoje) else { return [] }
@@ -76,19 +66,17 @@ class ResumoViewModel: ObservableObject {
 
 struct DiaSemana: Identifiable {
     let data: String
-    let progresso: Double?   // nil = sem registro
+    let progresso: Double?
     let futuro: Bool
     let ehHoje: Bool
     var id: String { data }
 }
 
-// MARK: - Prêmios
-
 struct Premio: Identifiable {
     let id: String
     let titulo: String
     let descricao: String
-    let simbolo: String      // SF Symbol
+    let simbolo: String
     let conquistado: Bool
     let grupo: Grupo
 
@@ -100,8 +88,6 @@ struct Premio: Identifiable {
     static let marcosSequencia = [3, 7, 14, 30, 60, 100, 365]
     static let marcosTotal = [1, 10, 50, 100, 250, 500]
 
-    // Sequência: o recorde de qualquer rotina (em dias, semanas ou meses, conforme a rotina).
-    // Constância: soma dos períodos completos de todas as rotinas.
     static func calcular(recordes: [Int], totalCompletos: Int) -> [Premio] {
         let melhorRecorde = recordes.max() ?? 0
         let sequencias = marcosSequencia.map { marco in

@@ -1,6 +1,5 @@
 import SwiftUI
 
-// Telas de categorias: a lista e o formulário de criar/editar
 struct CategoriasView: View {
     @StateObject var viewModel = CategoriaViewModel()
     @State private var novoNome = ""
@@ -55,7 +54,6 @@ struct CategoriasView: View {
     }
 }
 
-// Seção de formulário para escolher a categoria de uma rotina (usada em Nova e Editar)
 struct CategoriaPickerSection: View {
     @Binding var categoriaId: Int64?
     @StateObject private var viewModel = CategoriaViewModel()
@@ -79,7 +77,6 @@ struct CategoriaPickerSection: View {
     }
 }
 
-// Etiqueta colorida com o nome da categoria
 struct CategoriaTag: View {
     let categoria: Categoria
 
@@ -93,7 +90,3 @@ struct CategoriaTag: View {
             .clipShape(Capsule())
     }
 }
-
-
-
-

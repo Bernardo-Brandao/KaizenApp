@@ -4,13 +4,12 @@ import Testing
 
 @MainActor
 struct ReordenarTests {
-    // `destino` segue o .onMove da List: posição antes de remover o item
     @Test(arguments: [
-        (0, 3, [1, 2, 0, 3, 4]),   // desce o primeiro
-        (4, 0, [4, 0, 1, 2, 3]),   // sobe o último pro topo
-        (1, 5, [0, 2, 3, 4, 1]),   // manda pro fim
-        (2, 2, [0, 1, 2, 3, 4]),   // solta no mesmo lugar
-        (2, 3, [0, 1, 2, 3, 4]),   // logo abaixo de si mesmo = mesmo lugar
+        (0, 3, [1, 2, 0, 3, 4]),
+        (4, 0, [4, 0, 1, 2, 3]),
+        (1, 5, [0, 2, 3, 4, 1]),
+        (2, 2, [0, 1, 2, 3, 4]),
+        (2, 3, [0, 1, 2, 3, 4]),
     ])
     func moverUmItem(origem: Int, destino: Int, esperado: [Int]) {
         let resultado = TarefaViewModel.reordenar([0, 1, 2, 3, 4], de: IndexSet(integer: origem), para: destino)
@@ -33,7 +32,6 @@ struct ProgressoTests {
         let completo = HistoricoDia(id: 2, rotinaId: 1, data: "2026-10-20", totalTarefas: 3, tarefasConcluidas: 3)
         #expect(completo.completoNoDia)
 
-        // Sem tarefas não conta como completo
         let vazio = HistoricoDia(id: 3, rotinaId: 1, data: "2026-10-20", totalTarefas: 0, tarefasConcluidas: 0)
         #expect(vazio.percentual == 0)
         #expect(!vazio.completoNoDia)
@@ -51,11 +49,11 @@ struct ModeloRotinaTests {
     @Test func modelosSaoValidos() {
         let modelos = ModeloRotina.todos
         #expect(!modelos.isEmpty)
-        #expect(Set(modelos.map(\.nome)).count == modelos.count)   // ids únicos
+        #expect(Set(modelos.map(\.nome)).count == modelos.count)
         for modelo in modelos {
             #expect(["Diária", "Semanal", "Mensal"].contains(modelo.frequencia), "\(modelo.nome)")
             #expect(!modelo.tarefas.isEmpty, "\(modelo.nome)")
-            #expect(Rotina.normalizarIcone(modelo.icone) == modelo.icone, "\(modelo.nome)")   // um emoji só
+            #expect(Rotina.normalizarIcone(modelo.icone) == modelo.icone, "\(modelo.nome)")
             #expect(Set(modelo.tarefas.map(\.nome)).count == modelo.tarefas.count, "\(modelo.nome)")
         }
     }

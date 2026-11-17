@@ -1,6 +1,5 @@
 import SwiftUI
 
-// Formulário pra criar uma rotina nova
 struct NovaRotinaView: View {
     @ObservedObject var viewModel: RotinaViewModel
     @Environment(\.dismiss) var dismiss
@@ -37,7 +36,6 @@ struct NovaRotinaView: View {
                 .pickerStyle(.inline)
             }
 
-            // Diária: em quais dias a rotina vale (nos outros, folga)
             if frequencia == "Diária" {
                 Section {
                     SeletorDiasSemana(dias: $diasSemana)
@@ -68,7 +66,6 @@ struct NovaRotinaView: View {
     }
 
     func salvar() {
-        // Os horários dos lembretes ficam em cada tarefa
         viewModel.adicionar(
             nome: nome,
             descricao: descricao,

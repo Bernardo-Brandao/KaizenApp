@@ -1,6 +1,5 @@
 import SwiftUI
 
-// Anotar o valor de uma tarefa de valor (ex.: água): número grande, campo pra digitar e somas rápidas
 struct AnotarValorView: View {
     let tarefa: Tarefa
     var cor: Color = Paleta.destaque
@@ -13,7 +12,6 @@ struct AnotarValorView: View {
     private var valor: Double { NumeroUtil.ler(texto) ?? 0 }
     private var unidade: String { tarefa.ehContagem ? "vezes" : tarefa.unidade }
 
-    // Somas rápidas: um quarto e metade da meta (em quartos se a meta for pequena), ou 1 e 5 sem meta
     private var passos: [Double] {
         if tarefa.ehContagem { return [1] }
         guard let meta = tarefa.meta, meta > 0 else { return [1, 5] }
@@ -24,7 +22,6 @@ struct AnotarValorView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 24) {
-                // Número grande e, com meta, uma barra fina com o progresso do valor digitado
                 VStack(spacing: 12) {
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
                         Text(NumeroUtil.formatar(valor)).font(Estilo.numero(48))
@@ -57,7 +54,6 @@ struct AnotarValorView: View {
                 }
                 .padding(.horizontal, 40)
 
-                // Somas rápidas pra ir anotando ao longo do dia
                 HStack(spacing: 10) {
                     ForEach(passos, id: \.self) { passo in
                         Button("+\(NumeroUtil.formatar(passo))") {

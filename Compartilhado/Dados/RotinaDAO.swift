@@ -1,7 +1,6 @@
 import Foundation
 import SQLite
 
-// Acesso à tabela de rotinas: criar, listar, editar e excluir (excluir apaga tudo que é dela)
 class RotinaDAO {
     let db = DatabaseManager.shared.db
     let table = Table("rotinas")
@@ -18,7 +17,6 @@ class RotinaDAO {
     let icone = Expression<String>("icone")
     let diasSemana = Expression<String>("diasSemana")
 
-    // CREATE — agora retorna o id gerado, pra podermos agendar a notificação certa
     @discardableResult
     func inserir(_ rotina: Rotina) -> Int64? {
         let insert = table.insert(
@@ -36,7 +34,6 @@ class RotinaDAO {
         return try? db?.run(insert)
     }
 
-    // READ
     func listarTodas() -> [Rotina] {
         var lista: [Rotina] = []
         if let rows = try? db?.prepare(table) {
@@ -76,7 +73,6 @@ class RotinaDAO {
         )
     }
 
-    // UPDATE
     func atualizar(_ rotina: Rotina) {
         guard let rotinaId = rotina.id else { return }
         let registro = table.filter(id == rotinaId)
@@ -94,13 +90,11 @@ class RotinaDAO {
         ))
     }
 
-    // DELETE
     func excluir(_ rotina: Rotina) {
         guard let rotinaId = rotina.id else { return }
         let registro = table.filter(id == rotinaId)
         try? db?.run(registro.delete())
 
-        // Apaga junto as tarefas e o histórico da rotina, pra não deixar registros órfãos
         let rotinaIdFK = Expression<Int64>("rotinaId")
         try? db?.run("DELETE FROM registros_tarefa WHERE tarefaId IN (SELECT id FROM tarefas WHERE rotinaId = ?)", rotinaId)
         try? db?.run("DELETE FROM conclusoes WHERE tarefaId IN (SELECT id FROM tarefas WHERE rotinaId = ?)", rotinaId)

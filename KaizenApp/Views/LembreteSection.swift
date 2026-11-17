@@ -1,12 +1,9 @@
 import SwiftUI
 
-// Seção de lembretes da rotina (Nova e Editar). Os horários ficam em cada tarefa;
-// aqui só se escolhe o dia, em rotinas semanais (dia da semana) e mensais (dia do mês).
 struct LembreteSection: View {
     let frequencia: String
     @Binding var dia: Int
 
-    // Calendar.weekday: 1 = domingo … 7 = sábado
     private let diasDaSemana = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"]
 
     var body: some View {
@@ -33,7 +30,6 @@ struct LembreteSection: View {
             default: Text("O horário do lembrete fica em cada tarefa: defina ao criar ou editar a tarefa.")
             }
         }
-        // Ao trocar a frequência, o dia escolhido pode não fazer sentido (ex.: dia 20 numa rotina semanal)
         .onChange(of: frequencia) { _, nova in
             if nova == "Semanal" && dia > 7 { dia = 1 }
         }

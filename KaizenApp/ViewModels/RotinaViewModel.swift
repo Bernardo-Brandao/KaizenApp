@@ -1,7 +1,6 @@
 import Foundation
 import Combine
 
-// Quantas tarefas da rotina foram concluídas no período atual (dia, semana ou mês)
 struct ProgressoRotina {
     let concluidas: Int
     let total: Int
@@ -17,7 +16,7 @@ struct ProgressoRotina {
 
 class RotinaViewModel: ObservableObject {
     @Published var rotinas: [Rotina] = []
-    @Published var progresso: [Int64: ProgressoRotina] = [:]   // por id da rotina
+    @Published var progresso: [Int64: ProgressoRotina] = [:]
     private let dao = RotinaDAO()
     private let tarefaDao = TarefaDAO()
 
@@ -26,7 +25,6 @@ class RotinaViewModel: ObservableObject {
 
         var novoProgresso: [Int64: ProgressoRotina] = [:]
         for rotina in rotinas {
-            // Em dia de folga não tem progresso (a lista mostra "Folga hoje")
             guard let id = rotina.id, rotina.programada(em: DataUtil.hoje()) else { continue }
             let tarefas = tarefaDao.listarPorRotina(id, frequencia: rotina.frequencia)
             novoProgresso[id] = ProgressoRotina(
@@ -61,7 +59,6 @@ class RotinaViewModel: ObservableObject {
         carregar()
     }
 
-    // Cria a rotina de um modelo com as tarefas dele (sem categoria e sem lembrete); devolve o id
     @discardableResult
     func criar(aPartirDe modelo: ModeloRotina) -> Int64? {
         let nova = Rotina(
@@ -95,7 +92,6 @@ class RotinaViewModel: ObservableObject {
         carregar()
     }
 
-    // Pausa ou retoma a rotina: guarda o intervalo da pausa e liga/desliga o lembrete
     func alternarPausa(_ rotina: Rotina) {
         guard let id = rotina.id else { return }
         var atualizada = rotina

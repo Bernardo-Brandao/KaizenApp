@@ -1,7 +1,5 @@
 import SwiftUI
 
-// Sete bolinhas (D S T Q Q S S) pra escolher os dias. Conjunto vazio = todos os dias.
-// Não deixa desmarcar o último dia — sem nenhum dia, a rotina/tarefa nunca apareceria.
 struct SeletorDiasSemana: View {
     @Binding var dias: Set<Int>
     var cor: Color = Paleta.destaque

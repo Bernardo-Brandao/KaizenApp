@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import KaizenApp
 
-// Tarefas de valor (ex.: água 3 L)
 @MainActor
 struct TarefaValorTests {
     private func agua(meta: Double?, valor: Double) -> Tarefa {
@@ -28,7 +27,7 @@ struct TarefaValorTests {
         #expect(agua(meta: 3, valor: 0).valorDescrito == "— / 3 L")
         #expect(agua(meta: nil, valor: 2).valorDescrito == "2 L")
         #expect(agua(meta: 3, valor: 1.5).progressoValor == 0.5)
-        #expect(agua(meta: 3, valor: 4).progressoValor == 1)          // não passa de 100%
+        #expect(agua(meta: 3, valor: 4).progressoValor == 1)
         #expect(agua(meta: nil, valor: 1).progressoValor == 1)
     }
 
@@ -83,8 +82,8 @@ struct SaudeTests {
 
     @Test func soSobeOValor() {
         #expect(SaudeService.deveAtualizar(atual: 0, saude: 5200))
-        #expect(!SaudeService.deveAtualizar(atual: 2.5, saude: 2))       // anotado à mão maior fica
-        #expect(!SaudeService.deveAtualizar(atual: 2, saude: 2.0001))    // diferença mínima não conta
+        #expect(!SaudeService.deveAtualizar(atual: 2.5, saude: 2))
+        #expect(!SaudeService.deveAtualizar(atual: 2, saude: 2.0001))
     }
 
     @Test func sonoContaDesdeAs18hDeOntem() {
@@ -104,7 +103,6 @@ struct SaudeTests {
     @Test func sonoSobrepostoNaoContaDuasVezes() {
         let base = Date(timeIntervalSince1970: 0)
         let h = { (x: Double) in base.addingTimeInterval(x * 3600) }
-        // Relógio e iPhone gravaram a mesma noite com sobreposição: 23h–7h e 1h–8h = 9h, não 15h
         #expect(SaudeService.duracaoSemSobreposicao([(h(23), h(31)), (h(25), h(32))]) == 9 * 3600)
     }
 }

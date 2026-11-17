@@ -1,6 +1,5 @@
 import SwiftUI
 
-// Campo do emoji nos formulários: mostra o emoji atual e abre a grade de sugestões
 struct CampoEmoji: View {
     @Binding var icone: String
     @State private var mostrarSeletor = false
@@ -23,7 +22,6 @@ struct CampoEmoji: View {
     }
 }
 
-// Grade de emojis sugeridos por tema, com a opção de digitar qualquer outro
 struct SeletorEmojiView: View {
     @Binding var icone: String
     @Environment(\.dismiss) private var dismiss
