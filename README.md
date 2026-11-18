@@ -22,6 +22,17 @@ Integrantes: Bernardo Brandão, Marco Antônio Barro Tortelli e Bruno Baldiga.
 - **Widget** na tela de início, com toque para marcar tarefas.
 - **Siri e Atalhos**, **app Saúde** (passos, água, exercício, sono, mindfulness), **bloqueio com Face ID** e **backup** em arquivo.
 
+## Telas
+
+Prints tirados do app rodando no iPhone.
+
+<table>
+<tr><td align="center" width="25%"><img src="docs/prints/hoje.jpg" width="200" alt="Hoje"><br><sub><b>Hoje</b></sub></td><td align="center" width="25%"><img src="docs/prints/rotina.jpg" width="200" alt="Detalhe da rotina"><br><sub><b>Detalhe da rotina</b></sub></td><td align="center" width="25%"><img src="docs/prints/valor.jpg" width="200" alt="Anotar valor"><br><sub><b>Anotar valor</b></sub></td><td align="center" width="25%"><img src="docs/prints/comemoracao.jpg" width="200" alt="Rotina completa"><br><sub><b>Rotina completa</b></sub></td></tr>
+<tr><td align="center" width="25%"><img src="docs/prints/resumo.jpg" width="200" alt="Resumo"><br><sub><b>Resumo</b></sub></td><td align="center" width="25%"><img src="docs/prints/estatisticas.jpg" width="200" alt="Estatísticas"><br><sub><b>Estatísticas</b></sub></td><td align="center" width="25%"><img src="docs/prints/semana.jpg" width="200" alt="Sua semana"><br><sub><b>Sua semana</b></sub></td><td align="center" width="25%"><img src="docs/prints/premios.jpg" width="200" alt="Prêmios"><br><sub><b>Prêmios</b></sub></td></tr>
+<tr><td align="center" width="25%"><img src="docs/prints/rotinas.jpg" width="200" alt="Rotinas e busca"><br><sub><b>Rotinas e busca</b></sub></td><td align="center" width="25%"><img src="docs/prints/modelos.jpg" width="200" alt="Modelos prontos"><br><sub><b>Modelos prontos</b></sub></td><td align="center" width="25%"><img src="docs/prints/nova-rotina.jpg" width="200" alt="Nova rotina"><br><sub><b>Nova rotina</b></sub></td><td align="center" width="25%"><img src="docs/prints/editar-tarefa.jpg" width="200" alt="Editar tarefa"><br><sub><b>Editar tarefa</b></sub></td></tr>
+<tr><td align="center" width="25%"><img src="docs/prints/excluir.jpg" width="200" alt="Confirmação de exclusão"><br><sub><b>Confirmação de exclusão</b></sub></td><td align="center" width="25%"><img src="docs/prints/dias-anteriores.jpg" width="200" alt="Dias anteriores"><br><sub><b>Dias anteriores</b></sub></td><td align="center" width="25%"><img src="docs/prints/ajustes.jpg" width="200" alt="Ajustes"><br><sub><b>Ajustes</b></sub></td><td align="center" width="25%"><img src="docs/prints/categorias.jpg" width="200" alt="Categorias"><br><sub><b>Categorias</b></sub></td></tr>
+</table>
+
 ## Tecnologias
 
 - Swift e SwiftUI (app nativo para iOS)
