@@ -118,22 +118,3 @@ Ficam em `KaizenAppTests/`. Eles testam as regras que são fáceis de errar: seq
 As regras foram escritas como **funções puras**: recebem dados e devolvem um resultado, sem acessar o banco nem a data real. Por isso dá para testar passando datas fixas, como `hoje: "2026-10-20"`.
 
 Para rodar no Xcode: **⌘U**.
-
-## 7. Um bug interessante para contar
-
-No iPhone com o **iOS 27.2 beta**, a aba Resumo fechava o app. O relatório de erro apontava para uma simples comparação de datas (`agora >= validoAte`).
-
-A causa: o Xcode mais novo usa uma versão do operador `>=` de datas que **ainda não existia** naquele iOS beta. O app tentava chamar uma função que não existia e era encerrado.
-
-A solução foi comparar as datas só com `<`, que existe em todas as versões. Por exemplo, `agora < validoAte ? feitas : 0`.
-
-Para achar isso, foi preciso ler o relatório de erro do celular e conferir no binário quais funções o app importava (`dyld_info -imports`).
-
-## 8. Perguntas que o professor pode fazer
-
-- **Onde ficam os dados?** Num banco SQLite local, no App Group, para o widget também ler. Nada vai para servidor.
-- **Por que MVVM?** Separa a tela da lógica. A lógica pode ser testada sem abrir a tela, e as Views ficam simples.
-- **Como a sequência não quebra numa folga?** Ao contar de trás para frente, períodos de folga, pausa ou pulo são ignorados (`calcularStreak`).
-- **Como o app sabe que virou o dia?** As conclusões guardam a data. Ao listar, só vale o que é do período atual (`concluidaNoPeriodoAtual`). Então não é preciso "zerar" nada à meia-noite.
-- **E se o usuário apagar o app?** Os dados somem junto, por isso existe o **backup** em JSON.
-- **Como foi testado?** Testes automáticos nas regras, mais testes manuais no simulador e no iPhone.
